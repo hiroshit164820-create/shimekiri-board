@@ -1,0 +1,2409 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="会社ごとの締切と「つぎに動くのはだれか」を、スマホで見るためのボードです。">
+<meta name="color-scheme" content="light dark">
+<style>
+  html,body{margin:0;padding:0;}
+  body{font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#22303A;}
+  img{max-width:100%;}
+</style>
+</head>
+<body>
+<title>各社しめきりボード</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style id="app-style">
+  :root{
+    /* 地は白（本人の指示 2026-09-02）。カードと同じ色になるので、
+       カードの輪郭は 2px の --line-strong と影だけで支えている。ここを1pxに戻さないこと */
+    --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F1F4EE;
+    --ink:#22303A; --muted:#5C6B76; --line:#D9E0D9; --line-strong:#A9B7A9;
+    --accent:#2F5D9E; --accent-soft:#E3EBF6; --on-accent:#FFFFFF;
+    /* 完了の緑は done-bg の上で 4.5:1 を満たす濃さにしてある（#237E49 は 4.39 で不足だった） */
+    --done:#1F7342; --done-bg:#E2F3E8; --done-line:#9CCFAF;
+    --warn:#9C5F00; --warn-bg:#FCF0DC; --warn-line:#E4C185;
+    --late:#B23A2E; --late-bg:#FAE5E2; --late-line:#E3A79F;
+    /* ボール（だれの番か）の色。締切の色（赤=すぎた/橙=7日以内/青=進行中/緑=完了）と
+       同じ色を使うと「オレンジのカード＝締切が近い」と誤読されるので、色相をずらしてある */
+    --bus:#0D6B6B;  --bus-bg:#DCF0EE;  --bus-line:#8FCBC6;
+    --bcl:#A0356E;  --bcl-bg:#FBE3EE;  --bcl-line:#E4A6C6;
+    --hold:#5F4794; --hold-bg:#ECE6F7; --hold-line:#C0AADF;
+    --shadow:0 1px 3px rgba(34,48,58,.08),0 4px 14px rgba(34,48,58,.06);
+    /* 指で押せる最小サイズ。目安44pxに余裕を足してある（利用者に中高年を含むため） */
+    --tap:46px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0F1418; --surface:#1E252B; --surface-2:#263037;
+      --ink:#E8ECEF; --muted:#9AA7B0; --line:#37424B; --line-strong:#5D6B77;
+      --accent:#7FA9DF; --accent-soft:#25344A; --on-accent:#10141A;
+      --done:#6CC58F; --done-bg:#1E3A2A; --done-line:#336045;
+      --warn:#E5A54F; --warn-bg:#3A2E1B; --warn-line:#5E4A28;
+      --late:#E0796D; --late-bg:#3D2320; --late-line:#68352F;
+      --bus:#63C8C1;  --bus-bg:#123331;  --bus-line:#2B5D59;
+      --bcl:#E796BD;  --bcl-bg:#3A1F2C;  --bcl-line:#66374F;
+      --hold:#B9A0E4; --hold-bg:#2B2340; --hold-line:#4C3D6B;
+      --shadow:0 1px 3px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F1418; --surface:#1E252B; --surface-2:#263037;
+    --ink:#E8ECEF; --muted:#9AA7B0; --line:#37424B; --line-strong:#5D6B77;
+    --accent:#7FA9DF; --accent-soft:#25344A; --on-accent:#10141A;
+    --done:#6CC58F; --done-bg:#1E3A2A; --done-line:#336045;
+    --warn:#E5A54F; --warn-bg:#3A2E1B; --warn-line:#5E4A28;
+    --late:#E0796D; --late-bg:#3D2320; --late-line:#68352F;
+    --bus:#63C8C1;  --bus-bg:#123331;  --bus-line:#2B5D59;
+    --bcl:#E796BD;  --bcl-bg:#3A1F2C;  --bcl-line:#66374F;
+    --hold:#B9A0E4; --hold-bg:#2B2340; --hold-line:#4C3D6B;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    /* 末尾の絵文字フォントは、環境によって絵文字が白黒字形に落ちるのを防ぐため */
+    font-family:"Noto Sans JP",-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif,
+                "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji";
+    font-size:16px; line-height:1.8;
+  }
+  h1,h2,h3{
+    font-family:"Zen Kaku Gothic New","Noto Sans JP",sans-serif,
+                "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji";
+    line-height:1.45;letter-spacing:.02em;text-wrap:balance;margin:0;
+  }
+  button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer;}
+  button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px;}
+  input[type="text"],input[type="date"]{
+    font-family:inherit;font-size:16px;color:var(--ink);
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    padding:11px 12px;width:100%;min-height:var(--tap);
+  }
+  .num{font-variant-numeric:tabular-nums;}
+
+  /* ── 横スクロールする場所の共通作法 ────────────────
+     ・端をぼかして「まだ先がある」と分かるようにする
+     ・スワイプがページ送りや戻るに化けないよう contain
+     ・指を離した位置が半端にならないよう snap
+     ・つまめるスクロールバーを出す（スマホは細い帯として見える）
+     ──────────────────────────────────────────── */
+  .scroll-wrap{position:relative;}
+  .scroller{
+    overflow-x:auto;overflow-y:hidden;
+    overscroll-behavior-x:contain;
+    scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch;
+  }
+  .scroller::-webkit-scrollbar{height:10px;}
+  .scroller::-webkit-scrollbar-track{background:var(--surface-2);border-radius:999px;}
+  .scroller::-webkit-scrollbar-thumb{background:var(--line);border-radius:999px;border:2px solid var(--surface-2);}
+  .scroller::-webkit-scrollbar-thumb:hover{background:var(--muted);}
+  .scroller{scrollbar-width:thin;scrollbar-color:var(--line) var(--surface-2);}
+  .scroll-wrap::before,.scroll-wrap::after{
+    content:"";position:absolute;top:0;bottom:10px;width:30px;
+    pointer-events:none;opacity:0;transition:opacity .18s;z-index:8;
+  }
+  .scroll-wrap::after{right:0;background:linear-gradient(to left,var(--surface),transparent);}
+  .scroll-wrap::before{left:0;background:linear-gradient(to right,var(--surface),transparent);}
+  .scroll-wrap.can-r::after{opacity:1;}
+  .scroll-wrap.can-l::before{opacity:1;}
+  /* 左端に固定列がある表では、左のぼかしが固定列を隠すので出さない */
+  .scroll-wrap.no-left::before{display:none;}
+  .scroll-hint{
+    display:none;font-size:13px;color:var(--muted);
+    padding:6px 2px 0;
+  }
+  .scroll-wrap.can-l + .scroll-hint,.scroll-wrap.can-r + .scroll-hint{display:block;}
+  /* 押せるものは指の当たる大きさを確保する */
+  .btn-save,.btn-back,.btn-add,.btn-add-sm,.arch-bar button,.owner-pick button,
+  .choice-list button,.dlg-extra button,.dlg-actions button,.task-add button,
+  .icon-btn,.t-edit,.t-del,.co-edit,.t-link,.emoji-grid button,
+  .f-chip,.find-clear,.recent-btn,.recent-clear{
+    min-height:var(--tap);
+    display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  }
+  .company-open,.pchip,.mchip,.task-item label{min-height:var(--tap);}
+
+  .topbar{
+    position:sticky;top:0;z-index:30;
+    background:var(--surface);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap;padding:10px 16px;
+  }
+  .brand{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:17.5px;letter-spacing:.02em;white-space:nowrap;}
+  .brand .mark{margin-right:6px;}
+  .save-area{margin-left:auto;display:flex;align-items:center;gap:8px;min-width:0;}
+  .save-pill{
+    font-size:13px;color:var(--muted);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:999px;padding:5px 13px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .save-pill.st-unsaved{color:var(--warn);background:var(--warn-bg);border-color:var(--warn-line);}
+  .save-pill.st-saved{color:var(--done);background:var(--done-bg);border-color:var(--done-line);}
+  /* 失敗の知らせだけは省略せず全文を出す（読めないと次の手が分からない） */
+  .save-pill.st-error{
+    color:var(--late);background:var(--late-bg);border-color:var(--late-line);
+    white-space:normal;max-width:100%;
+  }
+  .btn-save{
+    border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);
+    border-radius:999px;padding:4px 16px;font-size:13px;font-weight:700;
+  }
+  .btn-save[hidden]{display:none;}
+
+  main{max-width:1080px;margin:0 auto;padding:20px 16px 80px;}
+  .page-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:6px 0 4px;}
+  .page-head h1{font-size:23px;}
+  .page-sub{color:var(--muted);font-size:14px;margin:0 0 16px;max-width:42em;}
+
+  /* ── 第1層：会社一覧 ─────────────── */
+  .legend{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:13px;margin:0 0 12px;}
+  /* display:flex は hidden を上書きしてしまうので、明示的に消す */
+  .legend[hidden]{display:none;}
+
+  /* ── 色の見かた ──────────────────────
+     8個のチップと4個の丸を出しっぱなしにすると、肝心の会社一覧の前に
+     5行ぶんの説明が居座って読みづらかった（本人の指摘 2026-09-03）。
+     ふだんは1行にたたみ、開いた／閉じたはこの端末に覚えさせる */
+  .legend-box{
+    border:1.5px solid var(--line);border-radius:12px;background:var(--surface-2);
+    margin:0 0 12px;overflow:hidden;
+  }
+  .legend-box[hidden]{display:none;}
+  .legend-box > summary{
+    cursor:pointer;list-style:none;
+    font-size:13.5px;font-weight:700;color:var(--muted);
+    padding:0 14px;min-height:var(--tap);display:flex;align-items:center;gap:8px;
+  }
+  .legend-box > summary::-webkit-details-marker{display:none;}
+  /* ▶ は自前で描く。ブラウザ既定の印は位置も大きさもそろわない */
+  .legend-box > summary::before{content:"▶";font-size:11px;transition:transform .15s;}
+  .legend-box[open] > summary::before{transform:rotate(90deg);}
+  .legend-box > summary:hover{color:var(--accent);}
+  .legend-box[open] > summary{border-bottom:1px solid var(--line);}
+  .legend-box .legend{
+    margin:0;padding:11px 14px;gap:6px;
+    flex-direction:column;align-items:flex-start;
+  }
+  .legend-box .legend + .legend{border-top:1px solid var(--line);}
+  /* 見出しは「どこが何色か」ではなく「その色が何を答えているか」を書く */
+  .legend .lg-key{font-weight:700;color:var(--ink);white-space:nowrap;}
+  .legend .lg-key::after{content:"：";}
+  .legend .lg-items{display:flex;flex-wrap:wrap;gap:7px 14px;align-items:center;}
+  @media (prefers-reduced-motion: reduce){
+    .legend-box > summary::before{transition:none;}
+  }
+  .legend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;}
+  .dot-done{background:var(--done);} .dot-warn{background:var(--warn);}
+  .dot-late{background:var(--late);} .dot-ok{background:var(--accent);}
+
+  .company-row{
+    background:var(--surface);border:2px solid var(--line-strong);border-radius:14px;
+    box-shadow:var(--shadow);display:flex;align-items:stretch;
+    margin-bottom:14px;overflow:hidden;
+  }
+  .company-side{
+    flex:0 0 216px;min-width:0;border-right:1px solid var(--line);
+    padding:14px;display:flex;flex-direction:column;gap:6px;
+  }
+  /* 会社の設定ボタンは、会社名の右どなり（カードの右上の余白）に置く。
+     下に置くと、進みぐあいの帯と混ざって「何のボタンか」が読めなかった（本人の指示 2026-09-03） */
+  .co-head{display:flex;align-items:flex-start;gap:10px;}
+  .co-head .company-open{flex:1 1 auto;min-width:0;}
+  .co-wrap{display:flex;flex-direction:column;gap:6px;min-width:0;}
+  /* ── 文字の強弱の決まり（3段） ─────────────────
+     ① いま何の話か（会社名・業務名・予定名）… 大きく・太く・濃い ink
+     ② 次の行動と締切（次にやること・締切日）… 中くらい・太く。急ぎは色も付ける
+     ③ 添え物（件数・「いまの状態」などの見出し）… 小さく・細く・muted
+     大きさで役割が分かるようにし、色は意味（だれの番か／いつまでか）だけに使う */
+  .company-open{
+    text-align:left;background:none;border:none;padding:0;align-self:flex-start;
+    font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:19px;
+    color:var(--ink);overflow-wrap:anywhere;letter-spacing:.01em;
+  }
+  .company-open .arrow{color:var(--accent);font-size:13px;margin-left:4px;}
+  .company-open:hover{color:var(--accent);}
+  .co-progress{font-size:13px;color:var(--muted);}
+  .co-bar{height:7px;border-radius:4px;background:var(--surface-2);overflow:hidden;}
+  .co-bar i{display:block;height:100%;background:var(--done);border-radius:4px;}
+  .co-arch{font-size:12.5px;color:var(--muted);}
+  .co-edit{
+    flex:0 0 auto;margin-top:0;
+    border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    font-size:12.5px;padding:4px 11px;border-radius:13px;white-space:nowrap;
+  }
+  .co-edit:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);}
+
+  .strip-box{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:0 0 6px;}
+  .strip-box .scroll-hint{padding:0 14px 4px;}
+  .chip-strip{display:flex;align-items:center;gap:10px;padding:12px 14px;}
+  .chip-strip .pchip,.chip-strip .btn-add-sm{scroll-snap-align:start;}
+  /* 会社一覧の業務チップ。第2層の業務カードとまったく同じ塗り分けにしてある。
+       枠と地      ＝ だれの番か（ボール）
+       左はしの帯  ＝ 締切のいそぎ具合
+     日付とアイコンは白地の上に置くので、地の色が変わっても読める濃さを保てる */
+  .pchip{
+    flex:0 0 auto;width:116px;display:flex;flex-direction:column;align-items:center;gap:4px;
+    background:var(--surface);border:2px solid var(--line-strong);
+    border-left:6px solid var(--line-strong);border-radius:14px;padding:10px 6px 9px;
+  }
+  /* 枠と地＝だれの番か */
+  .pchip.b-us{border-color:var(--bus);background:var(--bus-bg);}
+  .pchip.b-client{border-color:var(--bcl);background:var(--bcl-bg);}
+  .pchip.b-wait{border-color:var(--hold);background:var(--hold-bg);}
+  .pchip.b-none{border-color:var(--line-strong);background:var(--surface);}
+  /* 左はしの帯＝締切。b-* のうしろに置いて border-left-color を必ず勝たせる */
+  .pchip.u-ok{border-left-color:var(--accent);}
+  .pchip.u-warn{border-left-color:var(--warn);}
+  .pchip.u-late{border-left-color:var(--late);}
+  .pchip.u-done{border-left-color:var(--done);}
+  /* hover で枠色を変えると「進行中の青」と見分けがつかなくなるので、外側のリングで示す。
+     リングは色を持たない灰にする。地がボール色のチップの上でも埋もれず、意味も足さない */
+  .pchip:hover{box-shadow:0 0 0 3px var(--line-strong);}
+  .pchip-icon{
+    width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:25px;line-height:1;background:var(--surface);border:2px solid var(--line);
+  }
+  .pchip:hover .pchip-icon{transform:scale(1.08);}
+  .pchip-date{
+    font-size:15px;font-weight:700;color:var(--muted);
+    background:var(--surface);border-radius:8px;padding:1px 8px;
+  }
+  /* チップの中では業務名が「どれのことか」を決めるので、添え物より一段濃くする */
+  .pchip-name{font-size:13px;font-weight:500;color:var(--ink);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pchip.u-ok .pchip-icon{border-color:var(--accent);}
+  .pchip.u-ok .pchip-date{color:var(--accent);}
+  .pchip.u-warn .pchip-icon{border-color:var(--warn);}
+  .pchip.u-warn .pchip-date{color:var(--warn);}
+  .pchip.u-late .pchip-icon{border-color:var(--late);}
+  .pchip.u-late .pchip-date{color:var(--late);}
+  .pchip.u-done .pchip-icon{border-color:var(--done);}
+  .pchip.u-done .pchip-date{color:var(--done);}
+  /* 色だけに頼らせないための、チップの中のボール表示。地が色つきなので白ピルにする */
+  .pchip .ball.ball-xs{
+    font-size:11.5px;font-weight:700;padding:1px 7px;border-width:1px;gap:3px;
+    max-width:100px;overflow:hidden;text-overflow:ellipsis;background:var(--surface);
+  }
+  .strip-empty{color:var(--muted);font-size:13px;}
+
+  /* ── 会社をさがす（検索・絞り込み・履歴） ──────────────
+     会社が増えると縦に伸びて探せなくなるので、一覧の頭に置く。
+     ここは「絞る道具」だけを置き、締切そのものは会社行のバッジで見せる
+     （全社横断の一覧レーンは以前「ぱっとみ複雑」として外した経緯がある） */
+  .find-bar{display:flex;gap:8px;align-items:center;margin:0 0 10px;flex-wrap:nowrap;}
+  .find-box{flex:1 1 auto;min-width:0;position:relative;display:flex;align-items:center;}
+  .find-box .f-ico{
+    position:absolute;left:12px;font-size:16px;line-height:1;pointer-events:none;color:var(--muted);
+  }
+  .find-box input[type="text"]{padding-left:38px;}
+  .find-clear{
+    flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    border-radius:999px;padding:6px 13px;font-size:13.5px;white-space:nowrap;
+  }
+  .find-clear:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);}
+  .find-clear[hidden],.find-note[hidden]{display:none;}
+
+  /* 3つで固定なので折り返さず幅を3等分する。狭い画面では字を少しだけ詰める
+     （件数の数字 b は 15px のまま。数字が読めれば用は足りるため） */
+  .filter-bar{display:flex;flex-wrap:nowrap;gap:6px;align-items:center;margin:0 0 10px;}
+  .filter-bar .f-label{font-size:13px;color:var(--muted);white-space:nowrap;}
+  .f-chip{
+    flex:1 1 0;min-width:0;
+    display:inline-flex;align-items:baseline;justify-content:center;gap:5px;white-space:nowrap;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--muted);
+    border-radius:999px;padding:6px 8px;font-size:clamp(12.5px,3.45vw,13.5px);
+  }
+  .f-chip b{font-size:15px;font-weight:700;color:var(--ink);}
+  .f-chip:hover{border-color:var(--accent);color:var(--accent);}
+  /* 選んでいる絞り込みは塗りつぶす。枠だけだと押した実感が残らない */
+  .f-chip.sel{border-color:var(--accent);background:var(--accent);color:var(--on-accent);font-weight:700;}
+  .f-chip.sel b{color:var(--on-accent);}
+  .f-chip.c-late{border-color:var(--late-line);background:var(--late-bg);color:var(--late);}
+  .f-chip.c-late b{color:var(--late);}
+  .f-chip.c-late.sel{border-color:var(--late);background:var(--late);color:var(--on-accent);}
+  .f-chip.c-late.sel b{color:var(--on-accent);}
+  .f-chip.c-warn{border-color:var(--warn-line);background:var(--warn-bg);color:var(--warn);}
+  .f-chip.c-warn b{color:var(--warn);}
+  .f-chip.c-warn.sel{border-color:var(--warn);background:var(--warn);color:var(--on-accent);}
+  .f-chip.c-warn.sel b{color:var(--on-accent);}
+
+  /* 履歴は件数が変わるので、折り返さずに横へ送る（縦に伸びて一覧を押し下げないため）。
+     スクロール条は出さない。第2層の予定表と同じ「横に送る」操作なので指は迷わない */
+  .recent-bar{
+    display:flex;flex-wrap:nowrap;gap:6px;align-items:center;margin:0 0 12px;
+    overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .recent-bar::-webkit-scrollbar{display:none;}
+  .recent-bar .f-label{flex:0 0 auto;font-size:13px;color:var(--muted);white-space:nowrap;}
+  .recent-btn{
+    flex:0 0 auto;
+    border:1.5px solid var(--accent);background:var(--accent-soft);color:var(--accent);
+    border-radius:999px;padding:6px 13px;font-size:13.5px;font-weight:700;
+    max-width:8.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .recent-btn:hover{filter:brightness(.97);}
+  .recent-clear{
+    flex:0 0 auto;
+    border:1px solid var(--line);background:none;color:var(--muted);
+    border-radius:999px;padding:5px 11px;font-size:12.5px;white-space:nowrap;
+  }
+  .recent-clear:hover{color:var(--late);border-color:var(--late-line);background:var(--late-bg);}
+  /* 履歴が空でも行を消さない。消すと「ボタンがどこかへ行った」と見失わせる */
+  .recent-none{flex:0 0 auto;font-size:13px;color:var(--muted);white-space:nowrap;}
+
+  .find-note{font-size:13px;color:var(--muted);margin:0 0 10px;}
+  .find-empty{
+    background:var(--surface);border:2px solid var(--line-strong);border-radius:14px;
+    box-shadow:var(--shadow);padding:20px 18px;margin-bottom:14px;
+    display:flex;flex-direction:column;align-items:flex-start;gap:10px;
+  }
+  .find-empty p{margin:0;font-size:14.5px;color:var(--muted);overflow-wrap:anywhere;}
+
+  /* 会社行に出す「急ぎ」の印。0件のときは出さないので、普段の一覧は静かなまま */
+  .co-flags{display:flex;flex-wrap:wrap;gap:6px;}
+  .co-flag{
+    display:inline-flex;align-items:center;gap:4px;white-space:nowrap;
+    border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:700;border:1px solid var(--line);
+  }
+  .co-flag.c-late{color:var(--late);border-color:var(--late-line);background:var(--late-bg);}
+  .co-flag.c-warn{color:var(--warn);border-color:var(--warn-line);background:var(--warn-bg);}
+
+  .btn-add{border:1.5px dashed var(--line);background:none;color:var(--muted);border-radius:12px;padding:11px 16px;font-size:15px;}
+  .btn-add:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+  .btn-add.wide{width:100%;}
+  /* すすめたい方を塗りの主ボタンにして、2つの序列をはっきりさせる */
+  .btn-add.primary{
+    border:1.5px solid var(--accent);background:var(--accent);color:var(--on-accent);font-weight:700;
+  }
+  .btn-add.primary:hover{background:var(--accent);color:var(--on-accent);filter:brightness(1.08);}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .btn-row .btn-add{flex:1 1 240px;}
+  .btn-add-sm{flex:0 0 auto;border:1.5px dashed var(--line);background:none;color:var(--muted);border-radius:12px;padding:8px 14px;font-size:14px;white-space:nowrap;}
+  .btn-add-sm:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* ── 第2層 ───────────────────────── */
+  .crumb{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 12px;}
+  .btn-back{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 16px;font-size:14.5px;color:var(--muted);}
+  .btn-back:hover{color:var(--accent);border-color:var(--accent);}
+  .crumb h1{font-size:22px;}
+  /* 枠を付けて「押せるもの」に見せる（文字リンク風だと押せると気づかれない） */
+  .icon-btn{
+    border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    font-size:13.5px;padding:4px 10px;border-radius:999px;white-space:nowrap;
+  }
+  .icon-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);}
+  /* flex の子として縮まないようにする（縮むと指の当たる高さを割る） */
+  .detail-head .icon-btn,.detail-top .icon-btn,.p-acts .icon-btn,.crumb .icon-btn{flex:0 0 auto;}
+  /* 文字のない絵文字だけのボタンは、幅も指の当たる大きさを確保する */
+  .crumb .icon-btn{min-width:var(--tap);}
+
+  .arch-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;font-size:13px;color:var(--muted);}
+  .arch-bar button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 15px;font-size:13.5px;color:var(--muted);}
+  .arch-bar button:hover{color:var(--accent);border-color:var(--accent);}
+
+  .tl-card{background:var(--surface);border:2px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px;}
+  /* 固定している業務名の列のぶんだけ、止まる位置をずらす。
+     この値は renderCompany の gridTemplateColumns の1列目と必ず揃えること */
+  .tl-card .scroller{scroll-padding-left:320px;}
+  .tl-month,.tl-cell{scroll-snap-align:start;}
+  .tl-grid{display:grid;min-width:min-content;}
+  .tl-corner,.tl-month{padding:9px 10px;font-size:13.5px;color:var(--muted);border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap;}
+  .tl-corner{position:sticky;left:0;z-index:6;}
+  .tl-month{text-align:center;font-weight:700;border-left:1px solid var(--line);}
+  .tl-month .yy{display:block;font-weight:400;font-size:11.5px;letter-spacing:.05em;}
+  .tl-month.is-now{color:var(--accent);}
+  .tl-name{
+    position:sticky;left:0;z-index:5;background:var(--surface);
+    border-bottom:1px solid var(--line);padding:12px;
+    display:flex;align-items:flex-start;gap:9px;min-width:0;
+  }
+  .tl-name .p-ico{
+    flex:0 0 auto;width:38px;height:38px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;font-size:21px;line-height:1;
+    background:var(--surface-2);border:1.5px solid var(--line);
+  }
+  .tl-name.p-done .p-ico{background:var(--done-bg);border-color:var(--done-line);}
+  .tl-name.p-arch{opacity:.62;}
+  .tl-name .p-txt{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px;}
+  .tl-name .p-title{
+    font-family:"Zen Kaku Gothic New","Noto Sans JP",sans-serif;
+    font-weight:700;font-size:17px;line-height:1.45;overflow-wrap:anywhere;letter-spacing:.01em;
+  }
+  .tl-name.p-done .p-title{color:var(--done);}
+  .tl-name .p-meta{font-size:12.5px;color:var(--muted);}
+  .tl-name .p-acts{display:flex;flex-wrap:wrap;gap:6px;}
+  .tl-cell{border-bottom:1px solid var(--line);border-left:1px solid var(--line);padding:8px 7px;display:flex;flex-direction:column;gap:6px;}
+  .tl-cell.is-now{background:var(--accent-soft);}
+  .tl-row-last .tl-name,.tl-row-last{border-bottom:none;}
+
+  .mchip{
+    display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:2px;text-align:left;
+    border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;min-width:0;
+  }
+  .mchip:hover{border-color:var(--accent);}
+  .mchip.sel{outline:3px solid var(--accent);outline-offset:1px;}
+  .mchip-name{font-size:15.5px;font-weight:700;line-height:1.45;overflow-wrap:anywhere;}
+  .mchip-meta{font-size:12.5px;color:var(--muted);}
+  .mchip.u-ok{border-left:4px solid var(--accent);}
+  .mchip.u-warn{border-left:4px solid var(--warn);background:var(--warn-bg);}
+  .mchip.u-warn .mchip-meta{color:var(--warn);}
+  .mchip.u-late{border-left:4px solid var(--late);background:var(--late-bg);}
+  .mchip.u-late .mchip-meta{color:var(--late);}
+  .mchip.u-done{border-left:4px solid var(--done);background:var(--done-bg);border-color:var(--done-line);}
+  .mchip.u-done .mchip-name,.mchip.u-done .mchip-meta{color:var(--done);}
+  .mchip-owner{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  /* ── スマホの第2層：月を横に並べる代わりに、業務ごとの縦リストにする ──
+     狭い画面では月グリッドの固定列だけで画面の7〜8割が埋まり、
+     肝心の予定がほとんど見えないため、締切順の縦並びに切り替える */
+  .mlist{display:flex;flex-direction:column;gap:14px;margin-bottom:16px;}
+  .mproj-card{
+    background:var(--surface);border:2px solid var(--line-strong);border-radius:14px;
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .tl-name.mproj{position:static;border-bottom:1px solid var(--line);padding:14px;}
+  /* スマホの業務カードでは、操作ボタンを見出しの右どなり（カードの右上の余白）に置く。
+     状態ブロックの下に置くと、カードの底に流れて見つけにくかった（本人の指示 2026-09-03）。
+     題名・件数は左の列、状態ブロックは下の段いっぱいに置く */
+  .tl-name.mproj .p-txt{
+    display:grid;grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:"title acts" "meta acts" "status status";
+    align-items:start;column-gap:10px;row-gap:4px;width:100%;
+  }
+  .tl-name.mproj .p-title{grid-area:title;}
+  .tl-name.mproj .p-meta{grid-area:meta;}
+  .tl-name.mproj .p-status{grid-area:status;}
+  .tl-name.mproj .p-acts{grid-area:acts;align-self:start;justify-content:flex-end;}
+  .mcats{display:flex;flex-direction:column;}
+  .mcats-empty{padding:14px;color:var(--muted);font-size:13.5px;}
+  .mchip.mrow{
+    flex-direction:row;align-items:center;gap:12px;width:100%;
+    border:none;border-top:1px solid var(--line);border-left:6px solid transparent;
+    border-radius:0;padding:12px 14px;
+  }
+  .mcats > .mchip.mrow:first-child{border-top:none;}
+  .mchip.mrow.sel{outline:none;background:var(--accent-soft);}
+  .mchip.mrow.u-ok{border-left:6px solid var(--accent);}
+  .mchip.mrow.u-warn{border-left:6px solid var(--warn);}
+  .mchip.mrow.u-late{border-left:6px solid var(--late);}
+  .mchip.mrow.u-done{border-left:6px solid var(--done);}
+  .mrow-date{flex:0 0 88px;text-align:left;}
+  .mrow-date b{display:block;font-size:17.5px;font-weight:700;line-height:1.3;}
+  .mrow-date span{display:block;font-size:12.5px;color:var(--muted);line-height:1.4;}
+  /* 急ぎのものは、日付だけでなく残りの日数も色と太さで立てる */
+  .mchip.mrow.u-warn .mrow-left{color:var(--warn);font-weight:700;}
+  .mchip.mrow.u-late .mrow-left{color:var(--late);font-weight:700;}
+  .mchip.mrow.u-done .mrow-left{color:var(--done);}
+  /* 数字だけでは何の日付か分からないので、上に小さく見出しを置く。
+     すぐ上の .mrow-date span より詳細度を上げないと 12.5px に負ける */
+  .mrow-date .mrow-key{
+    font-size:11.5px;letter-spacing:.04em;color:var(--muted);line-height:1.5;
+  }
+  .mchip.mrow.u-warn .mrow-date b{color:var(--warn);}
+  .mchip.mrow.u-late .mrow-date b{color:var(--late);}
+  .mchip.mrow.u-done .mrow-date b{color:var(--done);}
+  .mchip.mrow.u-ok .mrow-date b{color:var(--accent);}
+  .mrow-body{flex:1 1 auto;min-width:0;text-align:left;display:block;}
+  .mrow-body .mchip-name,.mrow-body .mchip-meta{display:block;}
+  /* 選択した予定のすぐ下にタスクを開く（画面の下まで探しに行かせない） */
+  .mcats .detail{
+    border:none;border-top:1px solid var(--line);border-radius:0;
+    box-shadow:none;margin:0;background:var(--surface-2);
+  }
+
+
+  /* ── 業務の状態ブロック ──────────────
+     「いまどこ」「次に何を」「だれの番か」の3つを、
+     どの業務にも同じ位置・同じ順で出す（進捗表の1行に相当する） */
+  .p-status{
+    width:100%;margin-top:9px;border:1.5px solid var(--line);border-radius:10px;
+    background:var(--surface-2);padding:9px 11px;display:flex;flex-direction:column;gap:6px;
+  }
+  .st-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;font-size:13.5px;}
+  .st-key{
+    flex:0 0 auto;min-width:70px;color:var(--muted);font-size:11.5px;letter-spacing:.06em;
+    border-right:1px solid var(--line);padding-right:8px;white-space:nowrap;
+  }
+  /* 「次にやること」は、この画面でいちばん行動に近い一文。本文より大きく太くする */
+  .st-val{
+    min-width:0;flex:1 1 140px;overflow-wrap:anywhere;
+    font-size:15.5px;font-weight:700;color:var(--ink);line-height:1.5;
+  }
+  .st-val.is-none{font-size:14px;font-weight:400;color:var(--muted);}
+  .st-due{font-size:13px;color:var(--muted);}
+  .st-owner{font-size:12.5px;color:var(--muted);white-space:nowrap;}
+  .st-badge{
+    display:inline-flex;align-items:center;gap:5px;border-radius:999px;
+    padding:4px 12px;font-size:13.5px;font-weight:700;line-height:1.35;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--muted);
+    overflow-wrap:anywhere;
+  }
+  .st-badge.u-ok{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);}
+  .st-badge.u-warn{color:var(--warn);border-color:var(--warn-line);background:var(--warn-bg);}
+  .st-badge.u-late{color:var(--late);border-color:var(--late-line);background:var(--late-bg);}
+  .st-badge.u-done{color:var(--done);border-color:var(--done-line);background:var(--done-bg);}
+
+  /* だれがボールを持っているか */
+  .ball{
+    display:inline-flex;align-items:center;gap:5px;border-radius:999px;
+    padding:4px 12px;font-size:13.5px;font-weight:700;line-height:1.35;
+    border:1.5px solid var(--line);background:var(--surface);color:var(--muted);white-space:nowrap;
+  }
+  .ball.b-us{color:var(--bus);border-color:var(--bus-line);background:var(--bus-bg);}
+  .ball.b-client{color:var(--bcl);border-color:var(--bcl-line);background:var(--bcl-bg);}
+  .ball.b-wait{color:var(--hold);border-color:var(--hold-line);background:var(--hold-bg);}
+  .ball.b-none{font-weight:400;}
+  /* 予定の行に置く小さい版（1行ぶんの高さに収める） */
+  .ball.ball-sm{
+    margin-top:3px;font-size:12px;padding:1px 9px;border-width:1px;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  }
+  .mrow-body .ball.ball-sm{display:inline-flex;}
+  /* 月グリッドのチップは align-items:stretch なので、放っておくと全幅に伸びる */
+  .mchip .ball.ball-sm{align-self:flex-start;}
+
+  /* ── 業務カードの色 ──────────────────
+     色は1つの意味しか運べないので、役割を分けてある。
+       枠と見出しの地  ＝ だれの番か（ボール）
+       左はしの太い帯  ＝ 締切のいそぎ具合
+     こうすると「次に動くのは誰か」を、カードを開かずに遠目で拾える */
+  .mproj-card.b-us{border-color:var(--bus);}
+  .mproj-card.b-client{border-color:var(--bcl);}
+  .mproj-card.b-wait{border-color:var(--hold);}
+  .mproj-card.b-none{border-color:var(--line-strong);}
+  .mproj-card > .tl-name.b-us{background:var(--bus-bg);}
+  .mproj-card > .tl-name.b-client{background:var(--bcl-bg);}
+  .mproj-card > .tl-name.b-wait{background:var(--hold-bg);}
+  .mproj-card > .tl-name.b-none{background:var(--surface-2);}
+  /* 左はしの帯＝締切。枠の色に負けないよう濃い色をそのまま使う */
+  .mproj-card.s-late{border-left:9px solid var(--late);}
+  .mproj-card.s-warn{border-left:9px solid var(--warn);}
+  .mproj-card.s-ok{border-left:9px solid var(--accent);}
+  .mproj-card.s-done{border-left:9px solid var(--done);}
+  .mproj-card.s-arch,.mproj-card.s-none{border-left:9px solid var(--line-strong);}
+  /* 状態ブロックは、地の色が何であっても白い箱で浮かせる */
+  .tl-name .p-status{background:var(--surface);}
+  /* 月グリッド側（左の固定列）も同じ塗り分けにする */
+  .tl-grid .tl-name{border-left:9px solid transparent;}
+  .tl-grid .tl-name.b-us{background:var(--bus-bg);}
+  .tl-grid .tl-name.b-client{background:var(--bcl-bg);}
+  .tl-grid .tl-name.b-wait{background:var(--hold-bg);}
+  .tl-grid .tl-name.b-none{background:var(--surface);}
+  .tl-grid .tl-name.s-late{border-left-color:var(--late);}
+  .tl-grid .tl-name.s-warn{border-left-color:var(--warn);}
+  .tl-grid .tl-name.s-ok{border-left-color:var(--accent);}
+  .tl-grid .tl-name.s-done{border-left-color:var(--done);}
+
+  /* ── 件数の要約（会社ページの頭） ───── */
+  .sum-bar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
+  /* スマホでは折り返さず1行に収める。3つで固定なので幅を分け合わせる
+     （2行になると、頭の要約だけで画面の1/4を使ってしまう。本人の指示 2026-09-03） */
+  @media (max-width:759px){
+    .sum-bar{flex-wrap:nowrap;gap:6px;}
+    .sum-chip{
+      flex:1 1 0;min-width:0;justify-content:center;
+      padding:6px 8px;font-size:clamp(12.5px,3.4vw,13px);
+    }
+    .sum-chip b{font-size:15px;}
+  }
+  .sum-chip{
+    display:inline-flex;align-items:baseline;gap:6px;border:1.5px solid var(--line);
+    background:var(--surface);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--muted);
+    white-space:nowrap;
+  }
+  .sum-chip b{font-size:15.5px;font-weight:700;color:var(--ink);}
+  .sum-chip.c-late{border-color:var(--late-line);background:var(--late-bg);color:var(--late);}
+  .sum-chip.c-late b{color:var(--late);}
+  .sum-chip.c-warn{border-color:var(--warn-line);background:var(--warn-bg);color:var(--warn);}
+  .sum-chip.c-warn b{color:var(--warn);}
+  .sum-chip.c-ok{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+  .sum-chip.c-ok b{color:var(--accent);}
+  .sum-chip.c-done{border-color:var(--done-line);background:var(--done-bg);color:var(--done);}
+  .sum-chip.c-done b{color:var(--done);}
+  .sum-chip.c-hold{border-color:var(--hold-line);background:var(--hold-bg);color:var(--hold);}
+  .sum-chip.c-hold b{color:var(--hold);}
+  .sum-chip.c-bus{border-color:var(--bus-line);background:var(--bus-bg);color:var(--bus);}
+  .sum-chip.c-bus b{color:var(--bus);}
+  .sum-chip.c-bcl{border-color:var(--bcl-line);background:var(--bcl-bg);color:var(--bcl);}
+  .sum-chip.c-bcl b{color:var(--bcl);}
+  .sum-sep{flex:0 0 auto;align-self:center;width:1px;height:22px;background:var(--line-strong);margin:0 3px;}
+  .sum-none{font-size:13.5px;color:var(--muted);}
+  @media (max-width:759px){ .sum-sep{display:none;} }
+  .co-ball{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere;}
+
+  /* ── 担当者 ──────────────────────── */
+  .owner-chip{
+    display:inline-block;font-size:13px;color:var(--muted);
+    background:var(--surface-2);border:1px solid var(--line);
+    border-radius:999px;padding:3px 12px;white-space:nowrap;
+  }
+  .owner-pick{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  .owner-pick button{
+    border:1.5px solid var(--line);background:var(--surface);color:var(--muted);
+    border-radius:999px;padding:6px 14px;font-size:14px;
+  }
+  .owner-pick button:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* ── 詳細パネル ──────────────────── */
+  .detail{background:var(--surface);border:2px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px;}
+  .detail-empty{color:var(--muted);font-size:14.5px;padding:4px 2px;}
+  /* 1段目：どの予定か（左）と、閉じる（右上）。閉じるは折り返させない */
+  .detail-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+  .detail-title{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .detail-close{flex:0 0 auto;}
+  /* 2段目：締切・ボール・担当者・編集 */
+  .detail-head{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;margin-bottom:4px;}
+  .detail-close-foot{
+    width:100%;margin-top:14px;min-height:var(--tap);
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    border-radius:12px;padding:9px 16px;font-size:14px;
+  }
+  .detail-close-foot:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);}
+  .detail-title h3{font-size:19px;letter-spacing:.01em;overflow-wrap:anywhere;}
+  .detail-title .where{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere;}
+  .detail-due{font-size:13.5px;color:var(--muted);}
+  .detail-due.u-warn{color:var(--warn);font-weight:700;}
+  .detail-due.u-late{color:var(--late);font-weight:700;}
+  .detail-due.u-done{color:var(--done);font-weight:700;}
+  .task-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;}
+  .task-item{border-radius:10px;padding:2px 6px 5px 2px;}
+  .task-item:hover{background:var(--surface-2);}
+  /* 「メモ」「削除」はタスク名と必ず同じ行に置く（本人の指示 2026-09-03）。
+     折り返しを許すと、狭い画面でボタンだけが次の行に落ちて、どのタスクのボタンか分からなくなる。
+     名前のほうを縮めて受けるので、min-width:0 を外さないこと */
+  .t-main{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:nowrap;}
+  .task-item label{flex:1 1 auto;display:flex;align-items:center;gap:10px;padding:8px 2px;cursor:pointer;min-width:0;}
+  .task-item input[type="checkbox"]{width:24px;height:24px;flex:0 0 auto;accent-color:var(--done);cursor:pointer;}
+  /* タスク名は本文の大きさのまま、少しだけ太くして「読む行」だと分かるようにする */
+  .task-item .t-name{overflow-wrap:anywhere;font-weight:500;line-height:1.7;}
+  .task-item.is-done .t-name{color:var(--done);text-decoration:line-through;text-decoration-thickness:1px;}
+  .t-acts{flex:0 0 auto;display:flex;align-items:center;gap:5px;}
+  .t-del{border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:13px;border-radius:999px;padding:4px 12px;white-space:nowrap;}
+  .t-del:hover{color:var(--late);border-color:var(--late-line);background:var(--late-bg);}
+  .t-del.armed{color:#fff;background:var(--late);border-color:var(--late);font-weight:700;}
+  .t-edit{border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:13px;border-radius:999px;padding:4px 12px;white-space:nowrap;}
+  .t-edit:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);}
+  .t-link{
+    color:var(--accent);font-size:13px;text-decoration:none;white-space:nowrap;font-weight:700;
+    border:1px solid var(--accent);border-radius:999px;padding:4px 13px;background:var(--accent-soft);
+  }
+  .t-link:hover{filter:brightness(.96);text-decoration:underline;}
+  .t-note{
+    margin:0 0 2px 42px;font-size:13.5px;color:var(--muted);
+    line-height:1.75;overflow-wrap:anywhere;white-space:pre-wrap;
+  }
+  .task-add{display:flex;gap:8px;margin-top:14px;}
+  .task-add input{flex:1 1 auto;}
+  .task-add button{flex:0 0 auto;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);border-radius:9px;padding:8px 20px;font-weight:700;font-size:15px;}
+  .cat-done-note{margin-top:12px;font-size:14px;font-weight:700;color:var(--done);background:var(--done-bg);border:1px solid var(--done-line);border-radius:10px;padding:9px 14px;display:inline-block;}
+  .cat-warn-note{margin-top:10px;font-size:13.5px;color:var(--muted);}
+
+  /* ── ダイアログ ──────────────────── */
+  .dlg-backdrop{position:fixed;inset:0;z-index:100;background:rgba(15,22,28,.45);display:flex;align-items:center;justify-content:center;padding:16px;}
+  .dlg{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:100%;max-width:430px;max-height:88vh;overflow-y:auto;padding:20px 22px;}
+  .dlg h2{font-size:18px;margin-bottom:6px;}
+  .dlg .dlg-lead{font-size:13.5px;color:var(--muted);margin:0 0 14px;line-height:1.75;}
+  .dlg-field{margin-bottom:16px;}
+  .dlg-field .f-label{display:block;font-size:13.5px;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:.03em;}
+  .dlg-field .f-hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.7;}
+  /* 列数を固定せず「最低46px」で自動的に折り返す。どの画面幅でも指で押せる大きさが残る */
+  .emoji-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px;}
+  .emoji-grid button{
+    border:1.5px solid var(--line);background:var(--surface);border-radius:12px;
+    font-size:23px;line-height:1;padding:7px 0;
+  }
+  .emoji-grid button:hover{border-color:var(--accent);background:var(--accent-soft);transform:scale(1.12);}
+  .emoji-grid button.sel{border-color:var(--accent);background:var(--accent-soft);outline:2px solid var(--accent);transform:scale(1.06);}
+  .choice-list{display:flex;flex-direction:column;gap:7px;}
+  .choice-list button{
+    text-align:left;justify-content:flex-start;flex-direction:column;align-items:flex-start;gap:2px;
+    border:1.5px solid var(--line);background:var(--surface);
+    border-radius:11px;padding:10px 13px;font-size:14.5px;
+  }
+  .choice-list button .c-sub{display:block;font-size:12.5px;color:var(--muted);}
+  .choice-list button:hover{border-color:var(--accent);}
+  .choice-list button.sel{border-color:var(--accent);background:var(--accent-soft);outline:2px solid var(--accent);}
+  .dlg-actions{display:flex;gap:10px;margin-top:18px;}
+  .dlg-actions .primary{flex:1 1 auto;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);border-radius:10px;padding:11px 16px;font-weight:700;font-size:16px;}
+  .dlg-actions .ghost{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:10px;padding:11px 18px;font-size:15px;}
+  .dlg-extra{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;}
+  .dlg-extra button{border:1px solid var(--line);background:none;color:var(--muted);border-radius:10px;padding:8px 15px;font-size:14px;}
+  .dlg-extra button:hover{color:var(--accent);border-color:var(--accent);}
+  .dlg-extra button.danger{border-color:var(--late-line);color:var(--late);}
+  .dlg-extra button.danger.armed{background:var(--late);color:#fff;font-weight:700;border-color:var(--late);}
+  .dlg-err{color:var(--late);font-size:13.5px;margin-top:4px;}
+
+  .foot{margin-top:26px;display:flex;flex-direction:column;gap:10px;}
+  .foot details{color:var(--muted);font-size:14px;}
+  /* flex にすると開閉の▶印が消えるので、余白で高さを稼ぐ */
+  .foot summary{cursor:pointer;font-weight:700;padding:11px 0;}
+  .foot ul{margin:8px 0 0;padding-left:20px;}
+  .foot li{margin-bottom:6px;line-height:1.8;}
+  .tpl-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;color:var(--ink);}
+  .tpl-row:first-of-type{border-top:none;}
+  .tpl-row .t-sub{color:var(--muted);font-size:12.5px;}
+  .tpl-row .grow{flex:1 1 auto;min-width:0;}
+  .tpl-badge{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 10px;}
+
+  @media (max-width:640px){
+    .company-row{flex-direction:column;}
+    .company-side{flex:none;border-right:none;border-bottom:1px solid var(--line);flex-direction:row;align-items:flex-start;flex-wrap:wrap;}
+    .company-side .co-wrap{flex:1 1 auto;}
+    main{padding:14px 10px 70px;}
+  }
+  /* 狭い端末では、同じ行に収めるためにボタンを詰める。
+     落とすのは「🔗 開く」の言葉と、メモの印だけ。「メモ」「削除」の文字は残す
+     （印だけにすると、何のボタンか読めなくなる） */
+  @media (max-width:430px){
+    .t-acts{gap:5px;}
+    .task-item label{gap:9px;}
+    .t-link .t-word{display:none;}
+    .t-edit .t-ico{display:none;}
+    .t-link{font-size:15px;padding:4px 13px;}
+    /* 幅が縮むと、指の当たる高さ46pxのせいで丸い粒に見えてしまう。
+       角の丸みを落として「押せる四角」に見せる */
+    .t-edit,.t-del,.t-link{border-radius:13px;}
+  }
+  /* いちばん狭い端末だけ、さらに詰める */
+  @media (max-width:360px){
+    .t-edit,.t-del{padding:4px 9px;font-size:12.5px;}
+    .t-link{padding:4px 10px;}
+    .t-acts{gap:4px;}
+  }
+  /* スマホでは上部バーを1行に収める（2行になると本文の高さを毎画面で削る） */
+  @media (max-width:480px){
+    .brand{font-size:15px;}
+    .brand .mark{margin-right:4px;}
+    .save-pill{font-size:12px;max-width:54vw;padding:5px 11px;}
+    .topbar{padding:9px 12px;}
+    .btn-save{padding:4px 12px;white-space:nowrap;}
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .pchip,.mchip,.btn-add,.btn-add-sm{transition:border-color .15s,background-color .15s,color .15s;}
+    .pchip-icon,.emoji-grid button{transition:transform .15s,border-color .15s,background-color .15s;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .pchip:hover .pchip-icon,.emoji-grid button:hover,.emoji-grid button.sel{transform:none;}
+  }
+</style>
+
+<div id="chrome"></div>
+<main id="app"></main>
+<div id="dlgRoot"></div>
+
+<script type="application/json" id="app-state">{"companies":[{"id":"co-a","name":"A社（サンプル）","projects":[{"id":"p-a1","name":"IT導入補助金","icon":"💻","categories":[{"id":"m-a1a","name":"書類あつめ","due":"2026-09-10","tasks":[{"id":"t-01","name":"見積書をもらう","done":true},{"id":"t-02","name":"決算書のコピーを用意","done":true},{"id":"t-03","name":"gBizIDを取得する","done":true}]},{"id":"m-a1b","name":"申請の入力","due":"2026-09-25","tasks":[{"id":"t-04","name":"事業計画の下書き","done":false},{"id":"t-05","name":"入力内容の最終チェック","done":false}],"side":"client","owner":""},{"id":"m-a1c","name":"交付決定後の手続き","due":"2026-11-16","tasks":[{"id":"t-06","name":"発注・契約をすませる","done":false},{"id":"t-07","name":"支払いの記録を残す","done":false}]},{"id":"m-hyftqkx","name":"書類入力","due":"2026-10-02","side":"client","owner":"","tasks":[]}]},{"id":"p-a2","name":"業務改善助成金","icon":"🛠️","categories":[{"id":"m-a2a","name":"見積もり集め","due":"2026-08-20","tasks":[{"id":"t-08","name":"機器の見積もりを2社分もらう","done":true}]},{"id":"m-a2b","name":"賃金引上げ計画","due":"2026-10-05","tasks":[{"id":"t-09","name":"対象者リストをつくる","done":false},{"id":"t-10","name":"引上げ後の賃金表をつくる","done":false}]}]},{"id":"p-uywfl19","name":"ああああ","icon":"📋","categories":[{"id":"m-546k1n0","name":"書類あつめ","due":"2026-09-30","owner":"","tasks":[{"id":"t-s5r3k42","name":"必要書類の一覧をつくる","note":"","url":"","done":false},{"id":"t-q9d2rj2","name":"見積書をもらう","note":"","url":"","done":false},{"id":"t-tk2aqrd","name":"決算書のコピーを用意","note":"","url":"","done":false},{"id":"t-lon61ql","name":"gBizIDプライムを取得する","note":"","url":"https://gbiz-id.go.jp/","done":false}],"side":"us"},{"id":"m-xc6nh04","name":"申請の入力","due":"2026-10-14","owner":"","tasks":[{"id":"t-qroa8rf","name":"事業計画の下書き","note":"","url":"","done":false},{"id":"t-opydkkr","name":"入力内容の最終チェック","note":"","url":"","done":false},{"id":"t-iazlcw2","name":"申請を送信する","note":"","url":"https://www.jgrants-portal.go.jp/","done":false}]},{"id":"m-bkgny1s","name":"交付決定後の手続き","due":"2026-11-29","owner":"","tasks":[{"id":"t-byppgdd","name":"発注・契約をすませる","note":"","url":"","done":false},{"id":"t-wjxkedw","name":"支払いの記録を残す","note":"","url":"","done":false}]},{"id":"m-60jwqta","name":"実績報告","due":"2027-02-27","owner":"","tasks":[{"id":"t-0shadqf","name":"実績報告書をつくる","note":"","url":"","done":false},{"id":"t-u92c525","name":"証拠書類をそろえる","note":"","url":"","done":false}]}]}]},{"id":"co-b","name":"B社（サンプル）","projects":[{"id":"p-b1","name":"持続化補助金","icon":"🏪","categories":[{"id":"m-b1a","name":"様式の作成","due":"2026-09-18","tasks":[{"id":"t-11","name":"様式2 経営計画をつくる","done":true},{"id":"t-12","name":"様式3 補助事業計画をつくる","done":false}]},{"id":"m-b1b","name":"商工会議所の確認","due":"2026-10-01","tasks":[{"id":"t-13","name":"支援計画書（様式4）を依頼する","done":false}]}]},{"id":"p-b2","name":"ホームページ更新","icon":"🌐","categories":[{"id":"m-b2a","name":"原稿づくり","due":"2026-09-05","tasks":[{"id":"t-14","name":"新メニューの文章を書く","done":true},{"id":"t-15","name":"写真を選ぶ","done":true}]}]}]},{"id":"co-c","name":"C社（サンプル）","projects":[{"id":"p-c1","name":"採用（求人）","icon":"👥","categories":[{"id":"m-c1a","name":"求人票づくり","due":"2026-12-10","tasks":[{"id":"t-16","name":"仕事内容を整理する","done":false}]}]}]}],"templates":[]}</script>
+
+<script id="app-script">
+(function(){
+'use strict';
+
+var APP_TITLE = '各社しめきりボード';
+
+/* 業務アイコン。ぱっと見で見分けがつくよう、色の濃いものを8個ずつ5列に並べる */
+var EMOJIS = [
+  /* お金・目標 */   '💰','💴','🏆','🎯','📈','📊','🎁','⭐',
+  /* 書類・申請 */   '📋','📝','📑','🗂️','🖊️','🔍','🗓️','🔑',
+  /* IT・設備 */     '💻','🖥️','📱','🤖','⚙️','🔧','🛠️','🔌',
+  /* 店舗・場所 */   '🏢','🏪','🏭','🏬','🏥','🚚','🌐','📣',
+  /* 人・美容ほか */ '👥','🤝','🎓','✂️','💇','🎨','📷','🌱'
+];
+var DEFAULT_ICON = '📋';
+var FONT_LINK = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">';
+
+/* ============================================================
+ * 状態
+ * ============================================================ */
+var STATE;
+try { STATE = JSON.parse(document.getElementById('app-state').textContent); }
+catch (e) { STATE = null; }
+if (!STATE || typeof STATE !== 'object') STATE = {};
+if (!Array.isArray(STATE.companies)) STATE.companies = [];
+if (!Array.isArray(STATE.templates)) STATE.templates = [];
+
+/* ============================================================
+ * 保存用HTMLの組み立て
+ *
+ * 以前は document.documentElement.outerHTML を写し取っていたが、
+ * 閲覧者のブラウザ拡張（広告ブロッカー等）が head に差し込んだ
+ * スタイル要素まで一緒に保存され、1回の保存で約430KBずつ肥大していた。
+ * そのため DOM の写し取りはやめ、自分の要素だけから決定的に組み立てる。
+ * 画面はすべて JSON から描き直すので、器は空のまま書き出す。
+ * ============================================================ */
+function buildHtml(){
+  var styleEl = document.getElementById('app-style');
+  var scriptEl = document.getElementById('app-script');
+  if (!styleEl || !scriptEl) throw new Error('保存に必要な部品が見つかりません');
+  var json = JSON.stringify(STATE).replace(/</g, '\\u003c');
+  var openTag = '<script type="application/json" id="app-' + 'state">';
+  var closeTag = '</' + 'script>';
+  return [
+    '<!doctype html>',
+    '<html lang="ja">',
+    '<head>',
+    '<meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width,initial-scale=1">',
+    '<title>' + APP_TITLE + '</title>',
+    FONT_LINK,
+    styleEl.outerHTML,
+    '</head>',
+    '<body>',
+    '<div id="chrome"></div>',
+    '<main id="app"></main>',
+    '<div id="dlgRoot"></div>',
+    openTag + json + closeTag,
+    scriptEl.outerHTML,
+    '</body>',
+    '</html>'
+  ].join('\n');
+}
+
+/* ============================================================
+ * 画面の枠（上部バー）
+ * ============================================================ */
+var chrome = document.getElementById('chrome');
+var pill, btnSave;
+(function buildChrome(){
+  var bar = document.createElement('header');
+  bar.className = 'topbar';
+  var brand = document.createElement('div');
+  brand.className = 'brand';
+  brand.innerHTML = '<span class="mark">🧭</span>';
+  brand.appendChild(document.createTextNode(APP_TITLE));
+  var area = document.createElement('div');
+  area.className = 'save-area';
+  btnSave = document.createElement('button');
+  btnSave.className = 'btn-save';
+  btnSave.textContent = 'いますぐ保存';
+  btnSave.hidden = true;
+  pill = document.createElement('span');
+  pill.className = 'save-pill';
+  pill.textContent = '準備中…';
+  area.appendChild(btnSave);
+  area.appendChild(pill);
+  bar.appendChild(brand);
+  bar.appendChild(area);
+  chrome.appendChild(bar);
+})();
+
+/* ============================================================
+ * 保存
+ * ============================================================ */
+var artifactNS = null, nsSettled = false, readonly = false, dirty = false, saveTimer = null;
+
+/* スマホの上部バーは幅が足りないので、表示は短く・全文は title に持たせる */
+function setPill(cls, text, full){
+  pill.className = 'save-pill' + (cls ? ' ' + cls : '');
+  pill.textContent = text;
+  pill.title = full || text;
+}
+function refreshSaveUI(){ btnSave.hidden = !(dirty && artifactNS && !readonly); }
+function nowHM(){
+  var d = new Date();
+  return d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2);
+}
+
+if (window.claude && typeof window.claude.use === 'function') {
+  window.claude.use('artifact').then(function(ns){
+    nsSettled = true;
+    artifactNS = ns;
+    if (!ns) setPill('', 'お試し表示', 'お試し表示です。この画面では変更は保存されません');
+    else if (!dirty) setPill('', '保存できます', '変更するとすぐに保存されます');
+    refreshSaveUI();
+  });
+} else {
+  nsSettled = true;
+  setPill('', 'お試し表示', 'お試し表示です。この画面では変更は保存されません');
+}
+
+function scheduleSave(){
+  dirty = true;
+  setPill('st-unsaved', '未保存', '未保存の変更があります。もう少しで自動的に保存されます');
+  refreshSaveUI();
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(doSave, 1800);
+}
+function doSave(){
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (!nsSettled) { saveTimer = setTimeout(doSave, 800); return; }
+  if (!artifactNS) { setPill('', 'お試し表示', 'お試し表示です。この画面では変更は保存されません'); return; }
+  if (readonly) { setPill('', '閲覧のみ', '閲覧のみのモードです。変更は保存されません'); return; }
+  setPill('', '保存中…');
+  var html;
+  try { html = buildHtml(); }
+  catch (e) { setPill('st-error', '保存に失敗：' + e.message); return; }
+  artifactNS.publish(html).then(function(){
+    dirty = false;
+    setPill('st-saved', '保存しました ' + nowHM());
+    refreshSaveUI();
+  }).catch(function(err){
+    var code = err && err.code;
+    if (code === 'conflict') setPill('', '読み込み中…', 'ほかの画面での保存を読み込んでいます');
+    else if (code === 'not_granted' || code === 'not_writer') {
+      readonly = true;
+      setPill('', '閲覧のみ', '閲覧のみのモードです。変更は保存されません');
+    } else setPill('st-error', '保存に失敗しました。もう一度お試しください');
+    refreshSaveUI();
+  });
+}
+btnSave.addEventListener('click', doSave);
+
+/* ============================================================
+ * 表示位置のおぼえ
+ * ============================================================ */
+function loadView(){
+  try {
+    var raw = sessionStorage.getItem('shimekiri-view');
+    if (raw) {
+      var v = JSON.parse(raw);
+      if (v && typeof v === 'object') return v;
+    }
+  } catch (e) {}
+  return homeView();
+}
+/* 会社一覧の初期状態。q＝検索語、filter＝''／'late'／'warn' */
+function homeView(){
+  return { mode: 'home', coId: null, selCat: null, showArch: false, q: '', filter: '' };
+}
+function storeView(){
+  try { sessionStorage.setItem('shimekiri-view', JSON.stringify(VIEW)); } catch (e) {}
+}
+var VIEW = loadView();
+
+/* ============================================================
+ * 最近ひらいた会社（この端末だけのおぼえ書き）
+ *
+ * 業務データ（STATE）には入れない。入れると会社を開くたびに保存が走り、
+ * 「だれが何を見たか」まで共有される。閲覧者ごとに閉じた localStorage に置く。
+ * ============================================================ */
+var RECENT_KEY = 'shimekiri-recent';
+var RECENT_KEEP = 12, RECENT_SHOW = 5;
+function loadRecent(){
+  try {
+    var raw = localStorage.getItem(RECENT_KEY);
+    if (!raw) return [];
+    var a = JSON.parse(raw);
+    return Array.isArray(a) ? a.filter(function(x){ return x && typeof x.id === 'string'; }) : [];
+  } catch (e) { return []; }
+}
+function saveRecent(list){
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, RECENT_KEEP))); } catch (e) {}
+}
+function pushRecent(coId){
+  if (!coId) return;
+  var list = loadRecent().filter(function(x){ return x.id !== coId; });
+  list.unshift({ id: coId, at: new Date().getTime() });
+  saveRecent(list);
+}
+function clearRecent(){
+  try { localStorage.removeItem(RECENT_KEY); } catch (e) {}
+}
+/* 消された会社は履歴から落とす（押しても開けないボタンを出さない） */
+function recentCompanies(){
+  var out = [];
+  loadRecent().forEach(function(x){
+    var co = findCo(x.id);
+    if (co) out.push(co);
+  });
+  return out.slice(0, RECENT_SHOW);
+}
+
+/* ============================================================
+ * 日付・導出値
+ * ============================================================ */
+function fmtISO(d){
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+function todayStr(){ return fmtISO(new Date()); }
+function addDays(iso, n){
+  var d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return fmtISO(d);
+}
+function daysUntil(due){
+  if (!due) return null;
+  var a = new Date(due + 'T00:00:00'), b = new Date(todayStr() + 'T00:00:00');
+  return Math.round((a - b) / 86400000);
+}
+function whenLabel(due){
+  var n = daysUntil(due);
+  if (n === null) return '—';
+  if (n < 0) return Math.abs(n) + '日すぎ';
+  if (n === 0) return 'きょう';
+  if (n === 1) return 'あす';
+  return 'あと' + n + '日';
+}
+function fmtMD(due){
+  if (!due) return '—';
+  var p = due.split('-');
+  return Number(p[1]) + '/' + Number(p[2]);
+}
+function catDone(c){ return c.tasks.length > 0 && c.tasks.every(function(t){ return t.done; }); }
+function catCounts(c){
+  return { done: c.tasks.filter(function(t){ return t.done; }).length, total: c.tasks.length };
+}
+function projDone(p){ return p.categories.length > 0 && p.categories.every(catDone); }
+function activeProjects(co){ return co.projects.filter(function(p){ return !p.archived; }); }
+function archivedProjects(co){ return co.projects.filter(function(p){ return !!p.archived; }); }
+function projNextDue(p){
+  var undone = p.categories.filter(function(c){ return !catDone(c); }).map(function(c){ return c.due; }).sort();
+  if (undone.length) return undone[0];
+  var all = p.categories.map(function(c){ return c.due; }).sort();
+  return all.length ? all[all.length - 1] : null;
+}
+function urgency(due, done){
+  if (done) return 'done';
+  if (!due) return 'ok';
+  var n = daysUntil(due);
+  if (n < 0) return 'late';
+  return n <= 7 ? 'warn' : 'ok';
+}
+function uid(prefix){ return prefix + '-' + Math.random().toString(36).slice(2, 9); }
+
+/* ============================================================
+ * だれがボールを持っているか / 業務がいまどの状態か
+ * ============================================================ */
+/* 「担当者名」とは別に、いま動く番が誰なのかを3つから選ばせる。
+   名前だけだと、こちら待ちなのか先方待ちなのかが読み取れないため */
+var SIDES = [
+  /* short は幅の狭いところ（会社一覧のチップ・件数の要約）で使う短い呼び名 */
+  { value: 'us',     icon: '🏢', label: 'こちらの番', short: 'こちら',  sub: '自分たちが手を動かす番' },
+  { value: 'client', icon: '🤝', label: 'お客様の番', short: 'お客様',  sub: '書類の提出など、先方の作業待ち' },
+  { value: 'wait',   icon: '⏳', label: '返事待ち',   short: '待ち',    sub: '審査中など、どちらも動けない' }
+];
+function sideByValue(v){
+  for (var i = 0; i < SIDES.length; i++) if (SIDES[i].value === v) return SIDES[i];
+  return null;
+}
+function sideOf(c){
+  if (!c) return null;
+  return sideByValue(c.side || '');
+}
+/* いま動いている予定＝未完了のうち締切がいちばん近いもの */
+function currentCat(p){
+  var undone = p.categories.filter(function(c){ return !catDone(c); });
+  if (!undone.length) return null;
+  return undone.slice().sort(function(a, b){
+    return String(a.due || '9999').localeCompare(String(b.due || '9999'));
+  })[0];
+}
+/* 業務の見出しに出す3点（いまの状態・次にやること・ボール） */
+function projStatus(p){
+  if (p.archived)            return { badge: 'none', text: 'しまってあります', cat: null, next: '' };
+  if (!p.categories.length)  return { badge: 'none', text: '予定がありません', cat: null, next: '「➕ 予定」から追加してください' };
+  if (projDone(p))           return { badge: 'done', text: 'ぜんぶ完了',       cat: null, next: '' };
+  var c = currentCat(p);
+  var t = c.tasks.filter(function(x){ return !x.done; })[0];
+  return {
+    badge: urgency(c.due, false),
+    text: c.name + ' 中',
+    cat: c,
+    next: t ? t.name : 'タスクが未登録です（予定を押して追加）'
+  };
+}
+/* カードの枠と見出しを塗る色のキー＝だれの番か */
+function projBallKey(p){
+  if (p.archived || projDone(p)) return 'none';
+  var sd = sideOf(currentCat(p));
+  return sd ? sd.value : 'none';
+}
+/* 左はしの帯を塗る色のキー＝締切のいそぎ具合 */
+function projStateKey(p){
+  if (p.archived) return 'arch';
+  if (projDone(p)) return 'done';
+  var c = currentCat(p);
+  return c ? urgency(c.due, false) : 'none';
+}
+/* 会社の中の件数を数える（進捗表の頭にある集計に相当） */
+function coSummary(co){
+  var s = { late: 0, warn: 0, ok: 0, done: 0, us: 0, client: 0, wait: 0, unset: 0 };
+  activeProjects(co).forEach(function(p){
+    if (projDone(p)) { s.done++; return; }
+    var c = currentCat(p);
+    if (!c) { s.ok++; return; }
+    s[urgency(c.due, false)]++;
+    var sd = sideOf(c);
+    if (sd) s[sd.value]++; else s.unset++;
+  });
+  return s;
+}
+/* 検索語の当たり判定。会社名に当たれば業務は全部、
+   当たらなければ「名前が当たった業務」だけを返す（なぜ出たのかが見て分かる） */
+function normText(x){ return String(x || '').toLowerCase().trim(); }
+function matchCompany(co, q){
+  var projects = activeProjects(co);
+  var n = normText(q);
+  if (!n) return projects;
+  if (normText(co.name).indexOf(n) >= 0) return projects;
+  var hit = projects.filter(function(p){
+    if (normText(p.name).indexOf(n) >= 0) return true;
+    return p.categories.some(function(c){ return normText(c.name).indexOf(n) >= 0; });
+  });
+  return hit.length ? hit : null;
+}
+/* これまでに使った担当者名（入れ直さずに選べるようにする） */
+function knownOwners(){
+  var seen = {}, out = [];
+  STATE.companies.forEach(function(co){ co.projects.forEach(function(p){ p.categories.forEach(function(c){
+    var o = (c.owner || '').trim();
+    if (o && !seen[o]) { seen[o] = 1; out.push(o); }
+  }); }); });
+  return out.sort();
+}
+/* リンクは http/https のみ通す（javascript: などを踏ませない） */
+function safeUrl(raw){
+  var s = String(raw || '').trim();
+  if (!s) return '';
+  if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+  try {
+    var u = new URL(s);
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
+  } catch (e) { return ''; }
+}
+function findCo(id){
+  return STATE.companies.filter(function(c){ return c.id === id; })[0] || null;
+}
+function findCat(co, catId){
+  for (var i = 0; i < co.projects.length; i++) {
+    var p = co.projects[i];
+    for (var j = 0; j < p.categories.length; j++) {
+      if (p.categories[j].id === catId) return { p: p, c: p.categories[j] };
+    }
+  }
+  return null;
+}
+function mutate(fn){ fn(); render(); scheduleSave(); }
+
+/* ============================================================
+ * ひな形
+ * ============================================================ */
+var BUILTIN_TEMPLATES = [{
+  id: 'bi-hojo',
+  builtin: true,
+  name: '補助金の標準工程',
+  icon: DEFAULT_ICON,
+  cats: [
+    { name: '書類あつめ', offset: 0, side: 'client', tasks: [
+      { name: '必要書類の一覧をつくる' },
+      { name: '見積書をもらう' },
+      { name: '決算書のコピーを用意' },
+      { name: 'gBizIDプライムを取得する', url: 'https://gbiz-id.go.jp/' }
+    ] },
+    { name: '申請の入力', offset: 14, side: 'us', tasks: [
+      { name: '事業計画の下書き' },
+      { name: '入力内容の最終チェック' },
+      { name: '申請を送信する', url: 'https://www.jgrants-portal.go.jp/' }
+    ] },
+    { name: '交付決定後の手続き', offset: 60, side: 'client', tasks: [
+      { name: '発注・契約をすませる' },
+      { name: '支払いの記録を残す' }
+    ] },
+    { name: '実績報告', offset: 150, side: 'us', tasks: [
+      { name: '実績報告書をつくる' },
+      { name: '証拠書類をそろえる' }
+    ] }
+  ]
+}];
+function allTemplates(){ return BUILTIN_TEMPLATES.concat(STATE.templates); }
+function findTemplate(id){
+  return allTemplates().filter(function(t){ return t.id === id; })[0] || null;
+}
+function templateFromProject(p){
+  var dues = p.categories.map(function(c){ return c.due; }).filter(Boolean).sort();
+  var base = dues.length ? dues[0] : todayStr();
+  return {
+    id: uid('tpl'),
+    name: p.name,
+    icon: p.icon || DEFAULT_ICON,
+    cats: p.categories.slice().sort(function(a, b){
+      return String(a.due).localeCompare(String(b.due));
+    }).map(function(c){
+      return {
+        name: c.name,
+        offset: c.due ? Math.max(0, daysBetween(base, c.due)) : 0,
+        side: c.side || '',
+        owner: c.owner || '',
+        /* メモとリンクもひな形に含める（様式やJグランツのURLを毎回貼り直さずにすむ） */
+        tasks: c.tasks.map(function(t){
+          return { name: t.name, note: t.note || '', url: t.url || '' };
+        })
+      };
+    })
+  };
+}
+function daysBetween(a, b){
+  return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+}
+function applyTemplate(tpl, baseDate){
+  return tpl.cats.map(function(tc){
+    return {
+      id: uid('m'),
+      name: tc.name,
+      due: addDays(baseDate, tc.offset || 0),
+      side: tc.side || '',
+      owner: tc.owner || '',
+      /* 古いひな形はタスクが文字列だけなので、どちらの形でも受ける */
+      tasks: (tc.tasks || []).map(function(x){
+        var o = (typeof x === 'string') ? { name: x } : (x || {});
+        return { id: uid('t'), name: o.name || '', note: o.note || '', url: o.url || '', done: false };
+      })
+    };
+  });
+}
+
+/* ============================================================
+ * DOM ヘルパー
+ * ============================================================ */
+function h(tag, attrs, children){
+  var el = document.createElement(tag);
+  if (attrs) Object.keys(attrs).forEach(function(k){
+    if (k === 'class') el.className = attrs[k];
+    else if (k === 'text') el.textContent = attrs[k];
+    else if (k === 'html') el.innerHTML = attrs[k];
+    else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), attrs[k]);
+    else if (attrs[k] !== null && attrs[k] !== undefined) el.setAttribute(k, attrs[k]);
+  });
+  (children || []).forEach(function(c){ if (c) el.appendChild(c); });
+  return el;
+}
+/* ============================================================
+ * 画面の広さ / 横スクロールの手がかり
+ * ============================================================ */
+/* 月を横に並べる表は、この幅を下回ると読めなくなるので縦リストへ切り替える */
+var WIDE_Q = window.matchMedia('(min-width: 760px)');
+function isWide(){ return WIDE_Q.matches; }
+
+/* 横スクロールできる場所に「まだ先がある」印を付ける */
+function wireScroller(wrap, sc, hint){
+  function upd(){
+    var max = sc.scrollWidth - sc.clientWidth;
+    wrap.classList.toggle('can-l', sc.scrollLeft > 2);
+    wrap.classList.toggle('can-r', sc.scrollLeft < max - 2);
+    if (hint) hint.textContent = max > 2 ? 'よこに動かすと続きが見られます →' : '';
+  }
+  sc.addEventListener('scroll', upd, { passive: true });
+  if (window.ResizeObserver) {
+    try { new ResizeObserver(upd).observe(sc); } catch (e) {}
+  }
+  upd();
+  setTimeout(upd, 0);
+}
+/* 横に流れる場所を、見出し付きの領域として組み立てる */
+function makeScroller(inner, label, noLeft){
+  var sc = h('div', { class: 'scroller', role: 'region', tabindex: '0', 'aria-label': label }, [inner]);
+  var wrap = h('div', { class: 'scroll-wrap' + (noLeft ? ' no-left' : '') }, [sc]);
+  var hint = h('div', { class: 'scroll-hint' });
+  var box = h('div', {}, [wrap, hint]);
+  setTimeout(function(){ wireScroller(wrap, sc, hint); }, 0);
+  return { box: box, scroller: sc };
+}
+
+/* 確認は2段階ボタンで行う（iframe 内では confirm() が無言で false を返すため） */
+function armDelete(btn, label, fn){
+  if (btn.dataset.armed) { fn(); return; }
+  btn.dataset.armed = '1';
+  btn.classList.add('armed');
+  var old = btn.textContent;
+  btn.textContent = label;
+  setTimeout(function(){
+    if (!btn.isConnected) return;
+    delete btn.dataset.armed;
+    btn.classList.remove('armed');
+    btn.textContent = old;
+  }, 3500);
+}
+
+/* ============================================================
+ * ダイアログ（iframe 内では prompt() が使えないため自前）
+ * ============================================================ */
+var dlgRoot = document.getElementById('dlgRoot');
+function closeDlg(){ dlgRoot.innerHTML = ''; }
+
+function openDlg(cfg){
+  closeDlg();
+  var values = {};
+  var errEl = h('div', { class: 'dlg-err' });
+
+  var fields = (cfg.fields || []).map(function(f){
+    values[f.key] = f.value !== undefined ? f.value : '';
+    var wrap = h('div', { class: 'dlg-field' }, [h('span', { class: 'f-label', text: f.label })]);
+    if (f.type === 'emoji') {
+      var grid = h('div', { class: 'emoji-grid' });
+      EMOJIS.forEach(function(em){
+        var b = h('button', { type: 'button', text: em, 'aria-label': 'アイコン ' + em, onclick: function(){
+          values[f.key] = em;
+          Array.prototype.forEach.call(grid.children, function(x){ x.classList.remove('sel'); });
+          b.classList.add('sel');
+        } });
+        if (em === f.value) b.classList.add('sel');
+        grid.appendChild(b);
+      });
+      wrap.appendChild(grid);
+    } else if (f.type === 'choice') {
+      var list = h('div', { class: 'choice-list' });
+      f.options.forEach(function(op){
+        var b = h('button', { type: 'button', onclick: function(){
+          values[f.key] = op.value;
+          Array.prototype.forEach.call(list.children, function(x){ x.classList.remove('sel'); });
+          b.classList.add('sel');
+        } }, [
+          document.createTextNode(op.label),
+          op.sub ? h('span', { class: 'c-sub', text: op.sub }) : null
+        ]);
+        if (op.value === f.value) b.classList.add('sel');
+        list.appendChild(b);
+      });
+      wrap.appendChild(list);
+    } else {
+      var input = h('input', { type: f.type === 'date' ? 'date' : 'text', value: f.value || '' });
+      if (f.placeholder) input.placeholder = f.placeholder;
+      input.addEventListener('input', function(){ values[f.key] = input.value; });
+      input.addEventListener('keydown', function(ev){ if (ev.key === 'Enter') { ev.preventDefault(); submit(); } });
+      /* 担当者は、これまで使った名前をボタンで選べるようにする */
+      if (f.type === 'owner') {
+        var names = knownOwners();
+        if (names.length) {
+          var pick = h('div', { class: 'owner-pick' });
+          names.concat(['（なし）']).forEach(function(nm){
+            pick.appendChild(h('button', { type: 'button', text: nm, onclick: function(){
+              var val = nm === '（なし）' ? '' : nm;
+              input.value = val;
+              values[f.key] = val;
+              input.focus();
+            } }));
+          });
+          wrap.appendChild(pick);
+        }
+      }
+      wrap.appendChild(input);
+    }
+    if (f.hint) wrap.appendChild(h('div', { class: 'f-hint', text: f.hint }));
+    return wrap;
+  });
+
+  function submit(){
+    var fs = cfg.fields || [];
+    for (var i = 0; i < fs.length; i++) {
+      if (fs[i].required && !String(values[fs[i].key] || '').trim()) {
+        errEl.textContent = '「' + fs[i].label + '」を入れてください';
+        return;
+      }
+    }
+    closeDlg();
+    cfg.onSubmit(values);
+  }
+
+  var dlg = h('div', { class: 'dlg', role: 'dialog', 'aria-modal': 'true' },
+    [h('h2', { text: cfg.title }), cfg.lead ? h('p', { class: 'dlg-lead', text: cfg.lead }) : null]
+      .concat(fields)
+      .concat([errEl, h('div', { class: 'dlg-actions' }, [
+        h('button', { class: 'primary', type: 'button', text: cfg.okLabel || '決定', onclick: submit }),
+        h('button', { class: 'ghost', type: 'button', text: 'やめる', onclick: closeDlg })
+      ])])
+  );
+
+  if (cfg.extras && cfg.extras.length) {
+    var box = h('div', { class: 'dlg-extra' });
+    cfg.extras.forEach(function(ex){
+      var b = h('button', { type: 'button', class: ex.danger ? 'danger' : '', text: ex.label });
+      b.addEventListener('click', function(){
+        if (ex.danger) armDelete(b, ex.confirmLabel || 'もう一度押すと削除', function(){ closeDlg(); ex.run(); });
+        else { closeDlg(); ex.run(); }
+      });
+      box.appendChild(b);
+    });
+    dlg.appendChild(box);
+  }
+
+  var back = h('div', { class: 'dlg-backdrop', onclick: function(ev){ if (ev.target === back) closeDlg(); } }, [dlg]);
+  back.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeDlg(); });
+  dlgRoot.appendChild(back);
+  var first = dlg.querySelector('input,button');
+  if (first) first.focus();
+}
+
+/* ============================================================
+ * 色の見かた（第1層・第2層で共用）
+ *
+ * 出しっぱなしにすると本文の前に5行ぶん居座るので、ふだんはたたむ。
+ * 開いた／閉じたはこの端末に覚えさせる（業務データには入れない）
+ * ============================================================ */
+var LEGEND_KEY = 'shimekiri-legend-open';
+function legendOpen(){
+  try { return localStorage.getItem(LEGEND_KEY) === '1'; } catch (e) { return false; }
+}
+function saveLegendOpen(v){
+  try { localStorage.setItem(LEGEND_KEY, v ? '1' : '0'); } catch (e) {}
+}
+function legendRow(key, items){
+  return h('div', { class: 'legend' }, [
+    h('span', { class: 'lg-key', text: key }),
+    h('div', { class: 'lg-items' }, items)
+  ]);
+}
+function buildLegend(){
+  var box = h('details', { class: 'legend-box' });
+  box.open = legendOpen();
+  box.addEventListener('toggle', function(){ saveLegendOpen(box.open); });
+  box.appendChild(h('summary', { text: '色の見かた' }));
+  box.appendChild(legendRow('つぎに動くのはだれか', [
+    h('span', { class: 'ball b-us',     text: '🏢 こちらがやる' }),
+    h('span', { class: 'ball b-client', text: '🤝 お客様がやる' }),
+    h('span', { class: 'ball b-wait',   text: '⏳ 返事を待っている' }),
+    /* 灰のままが「壊れている」ではなく「まだ決めていない」だと分かるように */
+    h('span', { class: 'ball b-none',   text: 'まだ決めていない' })
+  ]));
+  box.appendChild(legendRow('いつまでにやるか', [
+    h('span', { html: '<i class="dot dot-late"></i>締切をすぎている' }),
+    h('span', { html: '<i class="dot dot-warn"></i>あと7日以内' }),
+    h('span', { html: '<i class="dot dot-ok"></i>まだ余裕がある' }),
+    h('span', { html: '<i class="dot dot-done"></i>ぜんぶ終わった' })
+  ]));
+  return box;
+}
+
+/* ============================================================
+ * 第1層：会社一覧
+ * ============================================================ */
+var app = document.getElementById('app');
+
+function renderHome(){
+  app.innerHTML = '';
+  app.appendChild(h('div', { class: 'page-head' }, [h('h1', { text: '会社ごとの進みぐあい' })]));
+  app.appendChild(h('p', { class: 'page-sub', text: '会社名で検索するか、「さいきん見た会社」から選ぶと、その会社の業務が出ます。' }));
+
+  /* ── さがす道具 ────────────────────────
+     検索窓は作り直すとカーソルが飛ぶので、入力のたびに描き直すのは
+     「絞り込みチップ」「最近ひらいた会社」「会社の一覧」だけにしてある（apply の中身） */
+  var input = h('input', { type: 'text', value: VIEW.q || '',
+    placeholder: '会社名・業務名でさがす',
+    'aria-label': '会社名・業務名でさがす' });
+  var clearBtn = h('button', { class: 'find-clear', type: 'button', text: '× クリア',
+    'aria-label': '検索と絞り込みの条件をクリアする' });
+  app.appendChild(h('div', { class: 'find-bar' }, [
+    h('div', { class: 'find-box' }, [h('span', { class: 'f-ico', text: '🔍' }), input]),
+    clearBtn
+  ]));
+
+  /* どちらも折り返さず1行に収める（本人の指示 2026-09-03）。
+     短くしたぶんの言葉は aria-label に残してある */
+  var recentBar = h('div', { class: 'recent-bar', 'aria-label': '最近ひらいた会社' });
+  app.appendChild(recentBar);
+  var filterBar = h('div', { class: 'filter-bar', 'aria-label': '会社のしぼりこみ' });
+  app.appendChild(filterBar);
+
+  var legendBox = buildLegend();
+  app.appendChild(legendBox);
+
+  var noteBox = h('p', { class: 'find-note' });
+  var listBox = h('div');
+  app.appendChild(noteBox);
+  app.appendChild(listBox);
+
+  /* 検索語だけで絞った結果。絞り込みチップの件数もここから数える */
+  function searchHits(){
+    var out = [];
+    STATE.companies.forEach(function(co){
+      var projects = matchCompany(co, VIEW.q || '');
+      if (projects) out.push({ co: co, projects: projects, sum: coSummary(co) });
+    });
+    return out;
+  }
+
+  function setFilter(v){
+    VIEW.filter = (VIEW.filter === v) ? '' : v;
+    storeView();
+    apply();
+  }
+
+  function apply(){
+    var hits = searchHits();
+    var nLate = hits.filter(function(x){ return x.sum.late > 0; }).length;
+    var nWarn = hits.filter(function(x){ return x.sum.warn > 0; }).length;
+
+    /* ── 絞り込みチップ ── */
+    filterBar.innerHTML = '';
+    /* 「しぼりこみ：」の見出しと各チップの「社」は、1行に収めるために外した。
+       意味は aria-label に残している。
+       「すべて」は空文字ではなく 'all'。会社は検索するまで出さない決まりなので、
+       「全部見る」も“選んだ状態”のひとつとして扱う必要がある（本人の指示 2026-09-03） */
+    [['all', '', 'すべて', hits.length, 'すべての会社'],
+     ['late', 'c-late', '⚠ おくれ', nLate, '締切をすぎた会社'],
+     ['warn', 'c-warn', '⏰ 7日以内', nWarn, '締切まで7日以内の会社']].forEach(function(x){
+      var v = x[0];
+      filterBar.appendChild(h('button', {
+        class: 'f-chip ' + x[1] + ((VIEW.filter || '') === v ? ' sel' : ''),
+        type: 'button', 'aria-pressed': (VIEW.filter || '') === v ? 'true' : 'false',
+        'aria-label': x[4] + ' ' + x[3] + '社でしぼりこむ',
+        onclick: function(){ setFilter(v); }
+      }, [h('span', { text: x[2] }), h('b', { class: 'num', text: String(x[3]) })]));
+    });
+
+    /* ── さいきん見た会社 ──
+       v12 で見出しを「🕘 最近：」まで縮めたうえ、履歴が空だと行ごと消えていたため
+       「どこへ行った」と見失わせた（本人の指摘 2026-09-03）。
+       見出しを言葉に戻し、空のときも行を残して置き場所を示す */
+    recentBar.innerHTML = '';
+    var recents = recentCompanies();
+    recentBar.appendChild(h('span', { class: 'f-label', text: '🕘 さいきん見た会社：' }));
+    if (!recents.length) {
+      recentBar.appendChild(h('span', { class: 'recent-none',
+        title: '会社をひらくと、この行にボタンが出ます',
+        text: 'まだありません' }));
+    } else {
+      recents.forEach(function(co){
+        recentBar.appendChild(h('button', {
+          class: 'recent-btn', type: 'button', text: co.name, title: co.name + 'をひらく',
+          onclick: function(){ gotoCompany(co.id, null); }
+        }));
+      });
+      recentBar.appendChild(h('button', {
+        class: 'recent-clear', type: 'button', text: '履歴を消す',
+        onclick: function(){ clearRecent(); apply(); }
+      }));
+    }
+
+    /* ── 会社の一覧 ──
+       検索するか、しぼりこみを選ぶまでは会社を出さない（本人の指示 2026-09-03）。
+       会社が増えても、開いた瞬間に全社ぶんが縦に流れないようにするため */
+    var rows = hits.filter(function(x){
+      if (VIEW.filter === 'late') return x.sum.late > 0;
+      if (VIEW.filter === 'warn') return x.sum.warn > 0;
+      return true;
+    });
+    var chosen = !!(VIEW.q || VIEW.filter);
+    clearBtn.hidden = !chosen;
+    /* 全件を出しているときは「3社のうち3社」と言わない（読む値がない） */
+    noteBox.textContent =
+        VIEW.q ? ('「' + VIEW.q + '」に当てはまる ' + rows.length + '社')
+      : VIEW.filter === 'late' ? ('締切をすぎた ' + rows.length + '社')
+      : VIEW.filter === 'warn' ? ('締切まで7日以内の ' + rows.length + '社')
+      : '';
+    noteBox.hidden = !noteBox.textContent;
+    /* 色の読み解きは、会社が出ているときだけ要る */
+    legendBox.hidden = !(chosen && rows.length);
+
+    listBox.innerHTML = '';
+    if (!STATE.companies.length) {
+      listBox.appendChild(h('div', { class: 'find-empty' }, [
+        h('p', { text: 'まだ会社がありません。下の「＋ 会社を追加」から登録してください。' })
+      ]));
+    } else if (!chosen) {
+      /* 何も選んでいないときの入口。次に押すものを3つだけ示す */
+      /* 急ぎが0件のボタンは出さない。押しても「ありません」に行き当たるだけで、
+         次に何をすればよいかが分からなくなる */
+      var entry = h('div', { class: 'btn-row' });
+      if (nLate) entry.appendChild(h('button', { class: 'btn-add primary', type: 'button',
+        text: '⚠ 締切をすぎた会社（' + nLate + '社）を見る',
+        onclick: function(){ setFilter('late'); } }));
+      else if (nWarn) entry.appendChild(h('button', { class: 'btn-add primary', type: 'button',
+        text: '⏰ 締切まで7日以内の会社（' + nWarn + '社）を見る',
+        onclick: function(){ setFilter('warn'); } }));
+      entry.appendChild(h('button', {
+        class: 'btn-add' + ((nLate || nWarn) ? '' : ' primary'), type: 'button',
+        text: '📋 すべての会社（' + STATE.companies.length + '社）を見る',
+        onclick: function(){ setFilter('all'); } }));
+      listBox.appendChild(h('div', { class: 'find-empty' }, [
+        h('p', { text: '上の検索窓に会社名を入れると、その会社の業務が出ます。「さいきん見た会社」からも開けます。' }),
+        entry
+      ]));
+    } else if (!rows.length) {
+      var why = VIEW.q
+        ? ('「' + VIEW.q + '」に当てはまる会社はありません。')
+        : (VIEW.filter === 'late' ? 'いま締切をすぎている会社はありません。'
+                                  : '締切まで7日以内の会社はありません。');
+      listBox.appendChild(h('div', { class: 'find-empty' }, [
+        h('p', { text: why }),
+        h('button', { class: 'btn-add', type: 'button', text: '↩ すべての会社を表示', onclick: function(){
+          VIEW.q = ''; input.value = ''; VIEW.filter = 'all'; storeView(); apply();
+        } })
+      ]));
+    } else {
+      rows.forEach(function(r){ listBox.appendChild(companyRow(r.co, r.projects, r.sum)); });
+    }
+  }
+
+  input.addEventListener('input', function(){ VIEW.q = input.value; storeView(); apply(); });
+  clearBtn.addEventListener('click', function(){
+    VIEW.q = ''; VIEW.filter = ''; input.value = '';
+    storeView(); apply(); input.focus();
+  });
+
+  apply();
+
+  app.appendChild(h('button', { class: 'btn-add wide', text: '＋ 会社を追加', onclick: addCompany }));
+  app.appendChild(buildFoot());
+}
+
+/* 会社1社ぶんの行。projects には、検索で当たった業務だけが渡ってくることがある */
+function companyRow(co, projects, sum){
+  var total = 0, done = 0;
+  projects.forEach(function(p){ p.categories.forEach(function(c){
+    total += c.tasks.length;
+    done += c.tasks.filter(function(t){ return t.done; }).length;
+  }); });
+  var pct = total ? Math.round(done / total * 100) : 0;
+  var archN = archivedProjects(co).length;
+
+  /* 急ぎの印は0件のときは出さない。普段の一覧を静かなままにするため */
+  var flags = h('div', { class: 'co-flags' });
+  if (sum.late) flags.appendChild(h('span', { class: 'co-flag c-late num', text: '⚠ おくれ ' + sum.late + '件' }));
+  if (sum.warn) flags.appendChild(h('span', { class: 'co-flag c-warn num', text: '⏰ 7日以内 ' + sum.warn + '件' }));
+
+  /* 「名前の変更・削除」では何の名前か読めなかったので、会社名の右に置いて
+     「会社名を直す」と書く。削除も同じ画面にあることは読み上げ用の説明に持たせる */
+  var editBtn = h('button', {
+    class: 'co-edit', text: '✏️ 会社名を直す',
+    'aria-label': co.name + 'の会社名を直す・この会社を削除する',
+    title: '会社名を直す（この画面から会社の削除もできます）',
+    onclick: function(){ editCompany(co); }
+  });
+  var wrap = h('div', { class: 'co-wrap' }, [
+    h('div', { class: 'co-head' }, [
+      h('button', { class: 'company-open', onclick: function(){ gotoCompany(co.id, null); } }, [
+        document.createTextNode(co.name),
+        h('span', { class: 'arrow', text: '▶' })
+      ]),
+      editBtn
+    ]),
+    (sum.late || sum.warn) ? flags : null,
+    h('span', { class: 'co-progress num', text: done + ' / ' + total + ' 件 完了' }),
+    h('span', { class: 'co-ball num',
+      text: SIDES.map(function(sd){ return sd.icon + ' ' + sd.short + ' ' + sum[sd.value]; }).join(' ・ ') }),
+    (function(){
+      var bar = h('div', { class: 'co-bar' }, [h('i')]);
+      bar.firstChild.style.width = pct + '%';
+      return bar;
+    })(),
+    archN ? h('span', { class: 'co-arch num', text: 'しまった業務 ' + archN + ' 件' }) : null
+  ]);
+  var side = h('div', { class: 'company-side' }, [wrap]);
+
+  var strip = h('div', { class: 'chip-strip' });
+  var ps = projects.map(function(p){
+    return { p: p, due: projNextDue(p), done: projDone(p) };
+  });
+  ps.sort(function(a, b){
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return String(a.due || '9999').localeCompare(String(b.due || '9999'));
+  });
+  if (!ps.length) strip.appendChild(h('span', { class: 'strip-empty', text: 'まだ業務がありません' }));
+  ps.forEach(function(x){
+    var u = x.done ? 'done' : urgency(x.due, false);
+    /* 第2層の業務カードと同じ判定を使う。ずれると同じ業務が層ごとに違う色になる */
+    var bk = projBallKey(x.p);
+    var sd = sideByValue(bk);
+    /* 業務名は幅に収まらないと「…」で切れるので、読み上げには全文を渡す */
+    var chipLabel = x.p.name + '（次の締切 ' + fmtMD(x.due)
+                  + (x.done ? '・ぜんぶ完了' : '・' + whenLabel(x.due)) + '）'
+                  + (sd ? ' / ' + sd.icon + ' ' + sd.label : '');
+    strip.appendChild(h('button', {
+      class: 'pchip u-' + u + ' b-' + bk,
+      title: chipLabel,
+      'aria-label': chipLabel,
+      onclick: function(){ gotoCompany(co.id, nearestCatId(x.p)); }
+    }, [
+      h('span', { class: 'pchip-icon', text: x.p.icon || DEFAULT_ICON }),
+      h('span', { class: 'pchip-date num', text: x.done ? '完了' : fmtMD(x.due) }),
+      h('span', { class: 'pchip-name', text: x.p.name }),
+      sd ? h('span', { class: 'ball ball-xs b-' + bk, text: sd.icon + ' ' + sd.short }) : null
+    ]));
+  });
+  strip.appendChild(h('button', { class: 'btn-add-sm', text: '＋ 業務', onclick: function(){ addProject(co); } }));
+
+  var sw = makeScroller(strip, co.name + 'の業務一覧（横に動かせます）');
+  sw.box.className = 'strip-box';
+  return h('div', { class: 'company-row' }, [side, sw.box]);
+}
+
+/* 会社ページの頭に出す件数の要約。
+   0件のチップは出さない。「おくれ0件・7日以内0件・完了0件・返事待ち0件」が
+   いつも並ぶと、読む値のない数字で画面が埋まる（本人の指摘 2026-09-03） */
+function sumBar(s){
+  function chip(cls, label, num, hint){
+    return h('span', { class: 'sum-chip ' + cls, title: hint || label }, [
+      h('span', { text: label }),
+      h('b', { class: 'num', text: String(num) }),
+      h('span', { text: '件' })
+    ]);
+  }
+  function group(defs){
+    return defs.filter(function(d){ return d[2] > 0; })
+               .map(function(d){ return chip(d[0], d[1], d[2], d[3]); });
+  }
+  var state = group([
+    ['c-late', 'おくれ',  s.late, '締切をすぎている業務の数'],
+    ['c-warn', '7日以内', s.warn, '締切まで7日以内の業務の数'],
+    ['c-ok',   '進行中',  s.ok,   '締切まで8日以上ある業務の数'],
+    ['c-done', '完了',    s.done, 'すべての予定が終わった業務の数']
+  ]);
+  /* 狭い画面では短い呼び名にし、絵文字も外す（本人の指示 2026-09-03）。
+     チップの地と枠の色が同じ意味を運んでいるので、絵文字がなくても取りちがえない */
+  var w = isWide();
+  var ball = group([
+    ['c-bus',  w ? '🏢 こちらの番' : 'こちら',   s.us,     'いま自分たちが手を動かす番の業務の数'],
+    ['c-bcl',  w ? '🤝 お客様の番' : 'お客様',   s.client, '書類の提出など、先方の作業待ちの業務の数'],
+    ['c-hold', w ? '⏳ 返事待ち'   : '待ち',     s.wait,   '審査中など、どちらも動けない業務の数']
+  ]);
+  var kids = state.slice();
+  /* 区切り線は、両がわに中身があるときだけ意味を持つ */
+  if (state.length && ball.length) kids.push(h('span', { class: 'sum-sep', 'aria-hidden': 'true' }));
+  kids = kids.concat(ball);
+  if (!kids.length) kids.push(h('span', { class: 'sum-none', text: '動いている業務はありません' }));
+  return h('div', { class: 'sum-bar', role: 'group', 'aria-label': '業務の件数' }, kids);
+}
+
+function nearestCatId(p){
+  var undone = p.categories.filter(function(c){ return !catDone(c); });
+  var pool = undone.length ? undone : p.categories;
+  if (!pool.length) return null;
+  return pool.slice().sort(function(a, b){ return String(a.due).localeCompare(String(b.due)); })[0].id;
+}
+
+function buildFoot(){
+  var foot = h('div', { class: 'foot' });
+
+  var help = h('details');
+  help.appendChild(h('summary', { text: '使い方' }));
+  var ul = h('ul');
+  [
+    '会社名 → 予定 → 細かいタスク、の順に押していくと深くなります。',
+    'タスクを全部チェックすると予定が緑になり、その業務の予定が全部緑になると、会社一覧のチップが「完了」の表示に変わって左の帯が緑になります。',
+    '業務カードの上には「いまの状態」「次にやること」「ボール」の3つが必ず出ます。ボールは、いま動く番が🏢こちらか🤝お客様か⏳返事待ちかを表します。',
+    '色は2つのことを答えます。カード全体の色は「つぎに動くのはだれか」（🏢こちらがやる＝みどり青／🤝お客様がやる＝ももいろ／⏳返事を待っている＝むらさき／まだ決めていない＝灰）。カード左はしの帯は「いつまでにやるか」（赤＝締切をすぎている、オレンジ＝あと7日以内、青＝まだ余裕がある、緑＝ぜんぶ終わった）。わざと色を変えてあるので、取りちがえません。',
+    '会社一覧にならぶ四角も、同じ読み方です。同じ業務は、一覧と予定表で必ず同じ色になります。',
+    '会社の一覧は、検索するか「すべての会社を見る」を押すまで出ません。会社が増えても、開いた瞬間に全部が縦にならばないようにしてあります。',
+    '検索窓では会社名のほか、業務名・予定名でも当たります（例：「IT導入」で、その業務を持つ会社だけが出ます）。',
+    '「⚠ おくれ」「⏰ 7日以内」を押すと、急ぎの会社だけに絞れます。もう一度押すと解除。急ぎがある会社は、会社名の下にも同じ印が出ます。',
+    '「🕘 さいきん見た会社」には、直前にひらいた会社が新しい順にならびます。入りきらないときは指で横になぞると続きが出ます。いま使っている端末だけに残る覚え書きなので、ほかの人には見えません（端末を変えると空から始まります）。「履歴を消す」でいつでも消せます。',
+    'ボールと担当者は、予定の「✏️ 編集」から変えられます。担当者は番のうえで実際に手を動かす人の名前です。',
+    'タスクの「📝 メモ」から、メモと様式・申請ページのURLを貼れます。貼ると「🔗 開く」が出ます。',
+    '同じ工程をくり返す業務は「ひな形」に保存しておくと、次の会社でひと押しで作れます。メモとリンクも一緒に入ります。',
+    '終わった業務は「しまう」で一覧から隠せます。消さずに残るので、あとから戻せます。',
+    '変更は少し待つと自動で保存されます（右上に「保存しました」と出ます）。'
+  ].forEach(function(s){ ul.appendChild(h('li', { text: s })); });
+  help.appendChild(ul);
+  foot.appendChild(help);
+
+  var tpl = h('details');
+  tpl.appendChild(h('summary', { text: 'ひな形の管理（' + allTemplates().length + '件）' }));
+  allTemplates().forEach(function(t){
+    var row = h('div', { class: 'tpl-row' }, [
+      h('span', { text: t.icon || DEFAULT_ICON }),
+      h('span', { class: 'grow' }, [
+        document.createTextNode(t.name),
+        h('span', { class: 't-sub', text: t.cats.length + '個の予定 ・ ' + t.cats.reduce(function(a, c){ return a + (c.tasks || []).length; }, 0) + '個のタスク' })
+      ]),
+      t.builtin ? h('span', { class: 'tpl-badge', text: '標準' }) : null
+    ]);
+    if (!t.builtin) {
+      var del = h('button', { class: 't-del', text: '削除' });
+      del.addEventListener('click', function(){
+        armDelete(del, 'もう一度押すと削除', function(){
+          mutate(function(){
+            STATE.templates = STATE.templates.filter(function(x){ return x.id !== t.id; });
+          });
+        });
+      });
+      row.appendChild(del);
+    }
+    tpl.appendChild(row);
+  });
+  foot.appendChild(tpl);
+  return foot;
+}
+
+/* ============================================================
+ * 第2層：会社の予定表
+ * ============================================================ */
+function gotoCompany(coId, selCat){
+  /* 会社一覧に戻ったときのために、検索語と絞り込みは持ったまま移動する */
+  VIEW = { mode: 'co', coId: coId, selCat: selCat, showArch: !!VIEW.showArch,
+           q: VIEW.q || '', filter: VIEW.filter || '' };
+  pushRecent(coId);
+  storeView();
+  render();
+}
+function gotoHome(){
+  VIEW = { mode: 'home', coId: null, selCat: null, showArch: false,
+           q: VIEW.q || '', filter: VIEW.filter || '' };
+  storeView();
+  render();
+}
+function ymOf(due){ return due ? due.slice(0, 7) : null; }
+function ymAdd(ym, n){
+  var p = ym.split('-');
+  var y = Number(p[0]), m = Number(p[1]) - 1 + n;
+  y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
+  return y + '-' + ('0' + (m + 1)).slice(-2);
+}
+function monthRange(projects){
+  var dues = [];
+  projects.forEach(function(p){ p.categories.forEach(function(c){ if (c.due) dues.push(ymOf(c.due)); }); });
+  dues.push(todayStr().slice(0, 7));
+  dues.sort();
+  var months = [], cur = dues[0], to = dues[dues.length - 1], guard = 0;
+  while (cur <= to && guard < 36) { months.push(cur); cur = ymAdd(cur, 1); guard++; }
+  while (months.length < 4) months.push(ymAdd(months[months.length - 1], 1));
+  return months;
+}
+
+function renderCompany(){
+  var co = findCo(VIEW.coId);
+  if (!co) { gotoHome(); return; }
+  app.innerHTML = '';
+
+  app.appendChild(h('div', { class: 'crumb' }, [
+    h('button', { class: 'btn-back', text: '← 会社一覧', onclick: gotoHome }),
+    h('h1', { text: co.name }),
+    h('button', { class: 'icon-btn', text: '✏️', 'aria-label': '会社名の変更・削除', onclick: function(){ editCompany(co); } })
+  ]));
+  /* 説明は1行だけにする。スマホでは頭の説明が3〜4行あると、
+     肝心の予定が画面に入らなかった（本人の指摘 2026-09-03）。
+     読み方の詳しい説明は下の「使い方」に置いてある */
+  app.appendChild(h('p', { class: 'page-sub', text: isWide()
+    ? '横は月ごとの締切です。予定を押すと、その下にタスクが出ます。'
+    : '予定は締切が近い順です。押すと、その下にタスクが出ます。' }));
+
+  app.appendChild(sumBar(coSummary(co)));
+  /* 色の読み解きは第1層と同じ部品。ふだんはたたんでおく */
+  app.appendChild(buildLegend());
+
+  var archN = archivedProjects(co).length;
+  if (archN) {
+    app.appendChild(h('div', { class: 'arch-bar' }, [
+      h('span', { class: 'num', text: 'しまった業務が ' + archN + ' 件あります' }),
+      h('button', {
+        text: VIEW.showArch ? '隠す' : '表示する',
+        onclick: function(){ VIEW.showArch = !VIEW.showArch; storeView(); render(); }
+      })
+    ]));
+  }
+
+  var projects = VIEW.showArch ? co.projects.slice() : activeProjects(co);
+  /* しまったものは最後、次に完了ずみ、残りは締切が近い順（第1層の並びと合わせる） */
+  projects.sort(function(a, b){
+    var aa = a.archived ? 1 : 0, bb = b.archived ? 1 : 0;
+    if (aa !== bb) return aa - bb;
+    var ad = projDone(a) ? 1 : 0, bd = projDone(b) ? 1 : 0;
+    if (ad !== bd) return ad - bd;
+    return String(projNextDue(a) || '9999').localeCompare(String(projNextDue(b) || '9999'));
+  });
+
+  if (!projects.length) {
+    var empty = h('div', { class: 'tl-card' }, [
+      h('div', { class: 'detail-empty', text: 'まだ業務がありません。下のボタンから追加してください。' })
+    ]);
+    empty.style.padding = '16px 18px';
+    app.appendChild(empty);
+  } else if (!isWide()) {
+    app.appendChild(renderMobileList(co, projects));
+  } else {
+    var months = monthRange(projects);
+    var nowYm = todayStr().slice(0, 7);
+    var grid = h('div', { class: 'tl-grid' });
+    grid.style.gridTemplateColumns = '320px repeat(' + months.length + ', minmax(132px, 1fr))';
+
+    grid.appendChild(h('div', { class: 'tl-corner', text: '業務' }));
+    months.forEach(function(ym){
+      var pp = ym.split('-');
+      var cell = h('div', { class: 'tl-month num' + (ym === nowYm ? ' is-now' : '') });
+      cell.appendChild(h('span', { class: 'yy', text: pp[0] + '年' }));
+      cell.appendChild(document.createTextNode(Number(pp[1]) + '月'));
+      grid.appendChild(cell);
+    });
+
+    projects.forEach(function(p, idx){
+      var isLast = idx === projects.length - 1;
+      var name = projHeader(co, p);
+      if (isLast) name.classList.add('tl-row-last');
+      grid.appendChild(name);
+
+      months.forEach(function(ym){
+        var cell = h('div', { class: 'tl-cell' + (ym === nowYm ? ' is-now' : '') });
+        if (isLast) cell.classList.add('tl-row-last');
+        p.categories.filter(function(c){ return ymOf(c.due) === ym; })
+          .sort(function(a, b){ return String(a.due).localeCompare(String(b.due)); })
+          .forEach(function(c){
+            var cnt = catCounts(c);
+            var u = urgency(c.due, catDone(c));
+            cell.appendChild(h('button', {
+              class: 'mchip u-' + u + (VIEW.selCat === c.id ? ' sel' : ''),
+              onclick: function(){ VIEW.selCat = c.id; storeView(); render(); }
+            }, [
+              h('span', { class: 'mchip-name', text: (u === 'done' ? '✓ ' : '') + c.name }),
+              h('span', { class: 'mchip-meta num', text: fmtMD(c.due) + ' まで ・ ' + cnt.done + '/' + cnt.total }),
+              (function(){
+                /* 終わった予定に「番」は無いので出さない */
+                var sd = (u === 'done') ? null : sideOf(c);
+                return sd ? h('span', { class: 'ball ball-sm b-' + sd.value, text: sd.icon + ' ' + sd.label }) : null;
+              })(),
+              c.owner ? h('span', { class: 'mchip-owner', text: '👤 ' + c.owner }) : null
+            ]));
+          });
+        grid.appendChild(cell);
+      });
+    });
+    /* 左に固定列があるので、ぼかしは右端だけに出す */
+    var tw = makeScroller(grid, co.name + 'の予定表（横に動かせます）', true);
+    app.appendChild(h('div', { class: 'tl-card' }, [tw.box]));
+  }
+
+  /* 狭い画面では、選んだ予定のすぐ下にタスクを出しているのでここには置かない */
+  if (isWide()) app.appendChild(renderDetail(co));
+  /* 迷わないよう、すすめたい「ひな形から」を塗りの主ボタンにする */
+  app.appendChild(h('div', { class: 'btn-row' }, [
+    h('button', { class: 'btn-add primary', text: '＋ ひな形から業務を追加', onclick: function(){ addProject(co, true); } }),
+    h('button', { class: 'btn-add', text: '＋ 白紙から業務を追加', onclick: function(){ addProject(co, false); } })
+  ]));
+}
+
+/* 業務の見出し（月グリッドの左列と、スマホのカード頭で共用する） */
+function projHeader(co, p){
+  var pd = projDone(p);
+  var doneCats = p.categories.filter(catDone).length;
+
+  var acts = h('div', { class: 'p-acts' }, [
+    h('button', { class: 'icon-btn', text: '✏️ 編集', onclick: function(){ editProject(co, p); } }),
+    h('button', { class: 'icon-btn', text: '➕ 予定', onclick: function(){ addCategory(co, p); } })
+  ]);
+  if (pd && !p.archived) {
+    acts.appendChild(h('button', { class: 'icon-btn', text: '📦 しまう', onclick: function(){
+      mutate(function(){ p.archived = true; if (VIEW.selCat && !findCat(co, VIEW.selCat)) VIEW.selCat = null; });
+    } }));
+  }
+  if (p.archived) {
+    acts.appendChild(h('button', { class: 'icon-btn', text: '↩ もどす', onclick: function(){
+      mutate(function(){ p.archived = false; });
+    } }));
+  }
+  var st = projStatus(p);
+  var sd = sideOf(st.cat);
+  var status = h('div', { class: 'p-status' }, [
+    h('div', { class: 'st-row' }, [
+      h('span', { class: 'st-key', text: 'いまの状態' }),
+      h('span', { class: 'st-badge u-' + st.badge, text: st.text }),
+      st.cat ? h('span', { class: 'st-due num', text: '締切 ' + fmtMD(st.cat.due) + '（' + whenLabel(st.cat.due) + '）' }) : null
+    ]),
+    h('div', { class: 'st-row' }, [
+      h('span', { class: 'st-key', text: '次にやること' }),
+      h('span', { class: 'st-val' + (st.next ? '' : ' is-none'), text: st.next || 'ありません' })
+    ]),
+    h('div', { class: 'st-row' }, [
+      h('span', { class: 'st-key', text: 'ボール' }),
+      h('span', {
+        class: 'ball b-' + (sd ? sd.value : 'none'),
+        text: sd ? (sd.icon + ' ' + sd.label) : (st.cat ? '未設定' : '—')
+      }),
+      (st.cat && st.cat.owner) ? h('span', { class: 'st-owner', text: '👤 ' + st.cat.owner }) : null
+    ])
+  ]);
+
+  var txt = h('div', { class: 'p-txt' }, [
+    h('div', { class: 'p-title', text: (p.archived ? '📦 ' : (pd ? '✓ ' : '')) + p.name }),
+    h('div', { class: 'p-meta num', text: '予定 ' + doneCats + '/' + p.categories.length + ' 完了' }),
+    status,
+    acts
+  ]);
+  return h('div', {
+    class: 'tl-name s-' + projStateKey(p) + ' b-' + projBallKey(p)
+      + (pd ? ' p-done' : '') + (p.archived ? ' p-arch' : '')
+  }, [
+    h('span', { class: 'p-ico', text: p.icon || DEFAULT_ICON }), txt
+  ]);
+}
+
+/* 閉じたときは、開いていた予定の行まで画面を戻す。
+   タスクが長いと、閉じたあとに関係のない場所へ飛ばされるため（本人の指示 2026-09-03） */
+function closeDetail(){
+  var row = app.querySelector('.mchip.mrow.sel') || app.querySelector('.mchip.sel');
+  var box = row ? row.getBoundingClientRect() : null;
+  /* 閉じるとパネル（＝この行より下）が消えるだけなので、行の位置は変わらない */
+  var keep = box ? (box.top + window.pageYOffset) : null;
+  var rowH = box ? box.height : 0;
+  VIEW.selCat = null;
+  storeView();
+  render();
+  if (keep === null) return;
+  var top = keep - window.pageYOffset;
+  /* すでに画面に入っているなら動かさない。見えているものを動かすと、
+     どこを見ていたのか分からなくなる */
+  if (top >= 0 && top + rowH <= window.innerHeight) return;
+  try {
+    var soft = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: Math.max(0, keep - 90), behavior: soft ? 'smooth' : 'auto' });
+  } catch (e) { window.scrollTo(0, Math.max(0, keep - 90)); }
+}
+
+/* 開いたタスクが画面の下に隠れたままにならないよう寄せる */
+function scrollDetailIntoView(){
+  var det = app.querySelector('.mcats .detail');
+  if (!det || !det.scrollIntoView) return;
+  var soft = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  try { det.scrollIntoView({ block: 'nearest', behavior: soft ? 'smooth' : 'auto' }); }
+  catch (e) { det.scrollIntoView(false); }
+}
+
+/* スマホ用：業務ごとのカードに、予定を締切順の縦並びで入れる */
+function renderMobileList(co, projects){
+  var list = h('div', { class: 'mlist' });
+  projects.forEach(function(p){
+    var head = projHeader(co, p);
+    head.classList.add('mproj');
+    var cats = h('div', { class: 'mcats' });
+
+    var sorted = p.categories.slice().sort(function(a, b){
+      return String(a.due || '9999').localeCompare(String(b.due || '9999'));
+    });
+    if (!sorted.length) {
+      cats.appendChild(h('div', { class: 'mcats-empty', text: 'まだ予定がありません。「➕ 予定」から追加できます。' }));
+    }
+    sorted.forEach(function(c){
+      var cnt = catCounts(c);
+      var u = urgency(c.due, catDone(c));
+      var sel = VIEW.selCat === c.id;
+      cats.appendChild(h('button', {
+        class: 'mchip mrow u-' + u + (sel ? ' sel' : ''),
+        'aria-expanded': sel ? 'true' : 'false',
+        onclick: function(){
+          if (sel) { closeDetail(); return; }
+          VIEW.selCat = c.id;
+          storeView();
+          render();
+          /* 開いたタスクが画面の外に出ないよう、必要なぶんだけ寄せる */
+          scrollDetailIntoView();
+        }
+      }, [
+        /* 数字だけでは何の日付か読めなかったので、上に「締切」と添える（本人の指示 2026-09-03） */
+        h('span', { class: 'mrow-date num' }, [
+          h('span', { class: 'mrow-key', text: u === 'done' ? '締切だった' : '締切' }),
+          h('b', { text: fmtMD(c.due) }),
+          h('span', { class: 'mrow-left', text: u === 'done' ? '✓ 終わった' : whenLabel(c.due) })
+        ]),
+        h('span', { class: 'mrow-body' }, [
+          h('span', { class: 'mchip-name', text: (u === 'done' ? '✓ ' : '') + c.name }),
+          h('span', { class: 'mchip-meta num', text: cnt.done + '/' + cnt.total + ' 完了' }),
+          (function(){
+            /* 終わった予定に「番」は無いので出さない */
+            var sd = (u === 'done') ? null : sideOf(c);
+            return sd ? h('span', { class: 'ball ball-sm b-' + sd.value, text: sd.icon + ' ' + sd.label }) : null;
+          })(),
+          c.owner ? h('span', { class: 'mchip-owner', text: '👤 ' + c.owner }) : null
+        ])
+      ]));
+      /* 選んだ予定のすぐ下にタスクを開く */
+      if (sel) cats.appendChild(renderDetail(co));
+    });
+
+    list.appendChild(h('div', { class: 'mproj-card s-' + projStateKey(p) + ' b-' + projBallKey(p) }, [head, cats]));
+  });
+  return list;
+}
+
+function renderDetail(co){
+  var box = h('div', { class: 'detail' });
+  var hit = VIEW.selCat ? findCat(co, VIEW.selCat) : null;
+  if (!hit) {
+    box.appendChild(h('div', { class: 'detail-empty', text: '上の予定を押すと、ここに細かいタスクが出ます。' }));
+    return box;
+  }
+  var p = hit.p, c = hit.c;
+  var u = urgency(c.due, catDone(c));
+  var cnt = catCounts(c);
+
+  /* 見出しは2段に分ける。1段目は「どの予定か」と閉じるボタン、2段目は締切などの添え物。
+     1つの行に全部入れると、閉じるボタンが折り返して左に落ちた（2026-09-03） */
+  box.appendChild(h('div', { class: 'detail-top' }, [
+    h('div', { class: 'detail-title' }, [
+      h('span', { class: 'where', text: (p.icon || '') + ' ' + p.name + ' の予定' }),
+      h('h3', { text: c.name })
+    ]),
+    /* 予定の行をもう一度押しても閉じられるが、タスクが長いとその行が画面の外にある。
+       ここに置いておけば、開いたまま迷子にならない（本人の指示 2026-09-03） */
+    h('button', { class: 'icon-btn detail-close', type: 'button', text: '✕ 閉じる',
+      'aria-label': 'このタスク一覧を閉じる', onclick: closeDetail })
+  ]));
+  box.appendChild(h('div', { class: 'detail-head' }, [
+    h('span', {
+      class: 'detail-due num u-' + u,
+      text: '締切 ' + fmtMD(c.due) + '（' + whenLabel(c.due) + '） ・ ' + cnt.done + '/' + cnt.total + ' 完了'
+    }),
+    (function(){
+      var sd = sideOf(c);
+      return sd ? h('span', { class: 'ball b-' + sd.value, text: sd.icon + ' ' + sd.label }) : null;
+    })(),
+    c.owner ? h('span', { class: 'owner-chip', text: '👤 ' + c.owner }) : null,
+    h('button', { class: 'icon-btn', text: '✏️ 編集', onclick: function(){ editCategory(co, p, c); } })
+  ]));
+
+  var ul = h('ul', { class: 'task-list' });
+  c.tasks.forEach(function(t){
+    var cb = h('input', { type: 'checkbox' });
+    cb.checked = !!t.done;
+    cb.addEventListener('change', function(){ mutate(function(){ t.done = cb.checked; }); });
+
+    var del = h('button', { class: 't-del', text: '削除' });
+    del.addEventListener('click', function(){
+      armDelete(del, 'もう一度押すと削除', function(){
+        mutate(function(){ c.tasks = c.tasks.filter(function(x){ return x.id !== t.id; }); });
+      });
+    });
+
+    var link = safeUrl(t.url);
+    /* 狭い画面でも名前と同じ行に収めるため、印と言葉を分けておく。
+       リンクは印だけで通じるので言葉を落とし、「メモ」「削除」は言葉を残す（読めないと押せない） */
+    var acts = h('div', { class: 't-acts' }, [
+      link ? h('a', {
+        class: 't-link', href: link, target: '_blank', rel: 'noopener noreferrer',
+        title: link, 'aria-label': 'リンクを開く'
+      }, [h('span', { class: 't-ico', text: '🔗' }), h('span', { class: 't-word', text: '開く' })]) : null,
+      h('button', { class: 't-edit', onclick: function(){ editTask(t); } },
+        [h('span', { class: 't-ico', text: '📝' }), h('span', { text: 'メモ' })]),
+      del
+    ]);
+
+    ul.appendChild(h('li', { class: 'task-item' + (t.done ? ' is-done' : '') }, [
+      h('div', { class: 't-main' }, [
+        h('label', {}, [cb, h('span', { class: 't-name', text: t.name })]),
+        acts
+      ]),
+      t.note ? h('div', { class: 't-note', text: t.note }) : null
+    ]));
+  });
+  box.appendChild(ul);
+
+  if (catDone(c)) box.appendChild(h('div', { class: 'cat-done-note', text: '🎉 この予定はぜんぶ完了しました' }));
+  else if (!c.tasks.length) box.appendChild(h('div', { class: 'cat-warn-note', text: 'タスクを1つ以上追加すると、完了で緑になります。' }));
+
+  var input = h('input', { type: 'text', placeholder: '新しいタスクを入力（例：見積書をもらう）' });
+  function addTask(){
+    var name = input.value.trim();
+    if (!name) { input.focus(); return; }
+    input.value = '';
+    mutate(function(){ c.tasks.push({ id: uid('t'), name: name, done: false }); });
+  }
+  input.addEventListener('keydown', function(ev){ if (ev.key === 'Enter') addTask(); });
+  box.appendChild(h('div', { class: 'task-add' }, [input, h('button', { type: 'button', text: '追加', onclick: addTask })]));
+  /* 一覧が長いと、上の「閉じる」まで戻るのがつらい */
+  box.appendChild(h('button', { class: 'detail-close-foot', type: 'button', text: '▲ このタスク一覧を閉じる',
+    onclick: closeDetail }));
+  return box;
+}
+
+/* ============================================================
+ * 追加・編集
+ * ============================================================ */
+function addCompany(){
+  openDlg({
+    title: '会社を追加',
+    fields: [{ key: 'name', label: '会社名', type: 'text', required: true, placeholder: '例：株式会社〇〇' }],
+    onSubmit: function(v){
+      mutate(function(){ STATE.companies.push({ id: uid('co'), name: v.name.trim(), projects: [] }); });
+    }
+  });
+}
+function editCompany(co){
+  openDlg({
+    title: '会社の編集',
+    fields: [{ key: 'name', label: '会社名', type: 'text', required: true, value: co.name }],
+    onSubmit: function(v){ mutate(function(){ co.name = v.name.trim(); }); },
+    extras: [{
+      label: 'この会社を削除', danger: true,
+      run: function(){
+        mutate(function(){
+          STATE.companies = STATE.companies.filter(function(x){ return x.id !== co.id; });
+          if (VIEW.coId === co.id) VIEW = { mode: 'home', coId: null, selCat: null, showArch: false };
+          storeView();
+        });
+      }
+    }]
+  });
+}
+
+function addProject(co, preferTemplate){
+  var tpls = allTemplates();
+  var opts = [{ value: '', label: '使わない（白紙から作る）' }].concat(tpls.map(function(t){
+    return {
+      value: t.id,
+      label: (t.icon || '') + ' ' + t.name,
+      sub: t.cats.length + '個の予定が入ります' + (t.builtin ? '（標準ひな形）' : '')
+    };
+  }));
+  openDlg({
+    title: '業務を追加',
+    lead: co.name + 'に登録します。補助金・助成金のほか、採用や販促などどんな業務でも構いません。',
+    fields: [
+      { key: 'name', label: '業務の名前（制度名など）', type: 'text', required: true, placeholder: '例：IT導入補助金' },
+      { key: 'icon', label: 'アイコン', type: 'emoji', value: DEFAULT_ICON },
+      { key: 'tpl', label: 'ひな形', type: 'choice', options: opts,
+        value: preferTemplate && tpls.length ? tpls[0].id : '',
+        hint: 'ひな形を選ぶと、いつもの予定とタスクがまとめて入ります。' }
+    ],
+    onSubmit: function(v){
+      var proj = { id: uid('p'), name: v.name.trim(), icon: v.icon || DEFAULT_ICON, categories: [] };
+      var tpl = v.tpl ? findTemplate(v.tpl) : null;
+      if (!tpl) {
+        mutate(function(){ co.projects.push(proj); });
+        gotoCompany(co.id, null);
+        addCategory(co, proj);
+        return;
+      }
+      openDlg({
+        title: 'ひな形の日程を決める',
+        lead: 'ひな形「' + tpl.name + '」の最初の予定の締切日を入れてください。あとの予定は、ひな形と同じ間隔で自動的に入ります。',
+        okLabel: '業務をつくる',
+        fields: [{
+          key: 'base', label: '最初の予定の締切日', type: 'date', required: true, value: addDays(todayStr(), 14),
+          hint: tpl.cats.map(function(tc){
+            return tc.name + '（' + (tc.offset ? '＋' + tc.offset + '日' : 'この日') + '）';
+          }).join(' / ')
+        }],
+        onSubmit: function(v2){
+          proj.categories = applyTemplate(tpl, v2.base);
+          mutate(function(){ co.projects.push(proj); });
+          gotoCompany(co.id, proj.categories.length ? proj.categories[0].id : null);
+        }
+      });
+    }
+  });
+}
+
+function editProject(co, p){
+  var extras = [{
+    label: '🧩 この業務をひな形として保存',
+    run: function(){
+      mutate(function(){ STATE.templates.push(templateFromProject(p)); });
+      flash('ひな形「' + p.name + '」を保存しました');
+    }
+  }];
+  if (p.archived) {
+    extras.push({ label: '↩ しまいから戻す', run: function(){ mutate(function(){ p.archived = false; }); } });
+  } else {
+    extras.push({ label: '📦 この業務をしまう', run: function(){
+      mutate(function(){ p.archived = true; if (VIEW.selCat && !findCat(co, VIEW.selCat)) VIEW.selCat = null; });
+    } });
+  }
+  extras.push({
+    label: 'この業務を削除', danger: true,
+    run: function(){
+      mutate(function(){
+        co.projects = co.projects.filter(function(x){ return x.id !== p.id; });
+        if (VIEW.selCat && !findCat(co, VIEW.selCat)) { VIEW.selCat = null; storeView(); }
+      });
+    }
+  });
+  openDlg({
+    title: '業務の編集',
+    fields: [
+      { key: 'name', label: '業務の名前', type: 'text', required: true, value: p.name },
+      { key: 'icon', label: 'アイコン', type: 'emoji', value: p.icon }
+    ],
+    onSubmit: function(v){ mutate(function(){ p.name = v.name.trim(); p.icon = v.icon || p.icon; }); },
+    extras: extras
+  });
+}
+
+function editTask(t){
+  openDlg({
+    title: 'タスクのメモとリンク',
+    lead: '様式のURLやJグランツの申請ページを貼っておくと、着手のたびに探さずにすみます。',
+    fields: [
+      { key: 'name', label: 'タスク名', type: 'text', required: true, value: t.name },
+      { key: 'note', label: 'メモ（空でも構いません）', type: 'text', value: t.note || '',
+        placeholder: '例：担当窓口は商工会議所の田中さん' },
+      { key: 'url', label: 'リンク（空でも構いません）', type: 'text', value: t.url || '',
+        placeholder: '例：https://www.jgrants-portal.go.jp/',
+        hint: 'URLを入れると、タスクの右に「🔗 開く」が出ます。' }
+    ],
+    onSubmit: function(v){
+      var url = safeUrl(v.url);
+      mutate(function(){
+        t.name = v.name.trim();
+        t.note = (v.note || '').trim();
+        t.url = url;
+      });
+      if ((v.url || '').trim() && !url) flash('リンクを開ける形にできませんでした（http/httpsのみ）');
+    }
+  });
+}
+
+function addCategory(co, p){
+  openDlg({
+    title: '予定を追加',
+    lead: '「' + p.name + '」の中に予定をつくります。',
+    okLabel: '追加する',
+    fields: [
+      { key: 'name', label: '予定の名前', type: 'text', required: true, placeholder: '例：書類あつめ' },
+      { key: 'due', label: '締切日', type: 'date', required: true, value: addDays(todayStr(), 30) },
+      { key: 'side', label: 'いま動く番はどちらですか', type: 'choice', value: 'us',
+        options: SIDES.map(function(x){ return { value: x.value, label: x.icon + ' ' + x.label, sub: x.sub }; }),
+        hint: '業務カードの「ボール」に出ます。あとから変えられます。' },
+      { key: 'owner', label: '担当者の名前（空でも構いません）', type: 'owner', placeholder: '例：山本',
+        hint: '番のうえで、実際に手を動かす人の名前です。ひとりで使うなら空のままで大丈夫です。' }
+    ],
+    onSubmit: function(v){
+      var cat = { id: uid('m'), name: v.name.trim(), due: v.due, side: v.side || '', owner: (v.owner || '').trim(), tasks: [] };
+      mutate(function(){ p.categories.push(cat); });
+      gotoCompany(co.id, cat.id);
+    }
+  });
+}
+function editCategory(co, p, c){
+  openDlg({
+    title: '予定の編集',
+    fields: [
+      { key: 'name', label: '予定の名前', type: 'text', required: true, value: c.name },
+      { key: 'due', label: '締切日', type: 'date', required: true, value: c.due },
+      { key: 'side', label: 'いま動く番はどちらですか', type: 'choice', value: c.side || '',
+        options: SIDES.map(function(x){ return { value: x.value, label: x.icon + ' ' + x.label, sub: x.sub }; })
+          .concat([{ value: '', label: '— まだ決めない', sub: 'ボールの欄が「未設定」になります' }]),
+        hint: '業務カードの「ボール」に出ます。' },
+      { key: 'owner', label: '担当者の名前（空でも構いません）', type: 'owner', value: c.owner || '', placeholder: '例：山本' }
+    ],
+    onSubmit: function(v){ mutate(function(){ c.name = v.name.trim(); c.due = v.due; c.side = v.side || ''; c.owner = (v.owner || '').trim(); }); },
+    extras: [{
+      label: 'この予定を削除', danger: true,
+      run: function(){
+        mutate(function(){
+          p.categories = p.categories.filter(function(x){ return x.id !== c.id; });
+          if (VIEW.selCat === c.id) { VIEW.selCat = null; storeView(); }
+        });
+      }
+    }]
+  });
+}
+
+function flash(msg){
+  setPill('st-saved', msg);
+  setTimeout(function(){ if (!dirty) setPill('', '保存できます', '変更するとすぐに保存されます'); }, 2500);
+}
+
+/* ============================================================
+ * 描画
+ * ============================================================ */
+function render(){
+  closeDlg();
+  if (VIEW.mode === 'co' && findCo(VIEW.coId)) renderCompany();
+  else renderHome();
+}
+render();
+
+/* 画面の広さが変わったら、月グリッドと縦リストを切り替える。
+   入力中に消えると困るので、ダイアログが開いているときは待つ */
+(function watchWidth(){
+  function onChange(){ if (!dlgRoot.firstChild) render(); }
+  if (WIDE_Q.addEventListener) WIDE_Q.addEventListener('change', onChange);
+  else if (WIDE_Q.addListener) WIDE_Q.addListener(onChange);
+})();
+
+/* 検証用フック（保存機構のラウンドトリップ試験で使用） */
+window.__shimekiri = {
+  buildHtml: buildHtml,
+  getState: function(){ return JSON.parse(JSON.stringify(STATE)); }
+};
+})();
+</script>
+
+</body>
+</html>
