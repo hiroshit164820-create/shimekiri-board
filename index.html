@@ -597,12 +597,17 @@
 
   /* ── 件数の要約（会社ページの頭） ───── */
   .sum-bar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
-  /* スマホでは折り返さず1行に収める。3つで固定なので幅を分け合わせる
-     （2行になると、頭の要約だけで画面の1/4を使ってしまう。本人の指示 2026-09-03） */
+  .sum-grp{display:flex;flex-wrap:wrap;gap:8px;}
+  /* スマホでは、収まるかぎり1行にして幅を分け合わせる
+     （2行になると、頭の要約だけで画面の1/4を使ってしまう。本人の指示 2026-09-03）。
+     ただしチップは最大7個まで増える。収まらないときは字を切らずに
+     「締切（状態）の段」と「だれの番（ボール）の段」の2段に分ける。
+     v16 は1行に固定して幅を等分していたため、4個以上で字が切れていた（2026-09-19 実測） */
   @media (max-width:759px){
-    .sum-bar{flex-wrap:nowrap;gap:6px;}
+    .sum-bar{gap:6px;}
+    .sum-grp{flex:1 1 auto;gap:6px;}
     .sum-chip{
-      flex:1 1 0;min-width:0;justify-content:center;
+      flex:1 1 auto;justify-content:center;
       padding:6px 8px;font-size:clamp(12.5px,3.4vw,13px);
     }
     .sum-chip b{font-size:15px;}
@@ -1746,10 +1751,12 @@ function sumBar(s){
     ['c-bcl',  w ? '🤝 お客様の番' : 'お客様',   s.client, '書類の提出など、先方の作業待ちの業務の数'],
     ['c-hold', w ? '⏳ 返事待ち'   : '待ち',     s.wait,   '審査中など、どちらも動けない業務の数']
   ]);
-  var kids = state.slice();
+  /* 状態とボールは段ごとにまとめる。狭い画面で折り返すときも、この単位で段が分かれる */
+  var kids = [];
+  if (state.length) kids.push(h('div', { class: 'sum-grp' }, state));
   /* 区切り線は、両がわに中身があるときだけ意味を持つ */
   if (state.length && ball.length) kids.push(h('span', { class: 'sum-sep', 'aria-hidden': 'true' }));
-  kids = kids.concat(ball);
+  if (ball.length) kids.push(h('div', { class: 'sum-grp' }, ball));
   if (!kids.length) kids.push(h('span', { class: 'sum-none', text: '動いている業務はありません' }));
   return h('div', { class: 'sum-bar', role: 'group', 'aria-label': '業務の件数' }, kids);
 }
