@@ -707,6 +707,56 @@
     overflow-wrap:anywhere;line-height:1.55;}
   .sg-table .sg-next.is-none{font-weight:400;color:var(--muted);}
 
+  /* ── 押せるもの／押せないものの見分け（本人の指摘 2026-09-19） ─────────
+     実機で「どれが押せるのか、押すと何が変わるのか分からない」と言われた。
+     それまでは「編集」ボタンも「お客様の番」の札も、同じ丸いふち付きの形だった。
+     決まりを1つにする：
+       押せるもの   … 丸いボタン。濃いめのふち＋下に「段」の影。押すと沈む
+       押せないもの … ふちの無い四角い色札（状態・ボール・件数）。影も付けない */
+  .icon-btn,.btn-back,.co-edit,.t-edit,.t-del,.t-link,.detail-close-foot,.arch-bar button,
+  .find-clear,.recent-clear,.recent-btn,.f-chip,.dlg-extra button,.dlg-actions .ghost,
+  .owner-pick button,.task-add button,.dlg-actions .primary,.mrow-go{
+    box-shadow:0 2px 0 var(--line-strong);
+  }
+  .icon-btn,.btn-back,.co-edit,.t-edit,.detail-close-foot,.arch-bar button,.find-clear,
+  .dlg-actions .ghost,.owner-pick button{
+    border-color:var(--line-strong);color:var(--ink);
+  }
+  .t-del,.recent-clear,.dlg-extra button{border-color:var(--line-strong);}
+  .layout-sw{box-shadow:0 2px 0 var(--line-strong);}
+  /* 押した手ごたえ。段の影が消えて、ボタンが下に沈む */
+  button:not(:disabled):active,a.t-link:active{transform:translateY(2px);box-shadow:none;}
+  .pchip:active,.mchip:active,.sc:active{transform:translateY(1px);filter:brightness(.96);}
+  .mchip.mrow:active{transform:none;background:var(--accent-soft);}
+  /* 押せない色札。ふちを消し、角を小さくして「ボタンではない」と見せる */
+  .st-badge[class],.ball[class],.sum-chip[class],.co-flag[class]{
+    border-color:transparent;border-radius:6px;box-shadow:none;
+  }
+  /* 工程の帯も押せないので、白い枠（ボタンに見えた）をやめて灰色の帯にする */
+  .step[class]{border:none;}
+  .step.s-todo{background:var(--line);}
+  .steps .step{height:10px;}
+  .steps .step.s-now{height:16px;}
+
+  /* 予定の行の右はし「タスク ▼」。行ぜんたいが押せることを示す */
+  .mrow-go{
+    flex:0 0 auto;align-self:center;display:inline-flex;align-items:center;gap:4px;
+    border:1.5px solid var(--line-strong);border-radius:999px;background:var(--surface);
+    color:var(--accent);font-size:13px;font-weight:700;line-height:1.3;padding:6px 10px;white-space:nowrap;
+  }
+  .mrow-chev{font-size:10px;}
+  .mchip.mrow.sel .mrow-go{background:var(--accent);border-color:var(--accent);color:var(--on-accent);box-shadow:none;}
+  .mchip.mrow:active .mrow-go{transform:translateY(2px);box-shadow:none;}
+  /* 狭い端末では言葉を落として ▼ だけにする（予定名の幅を残すため） */
+  @media (max-width:374px){
+    .mrow-go-t{display:none;}
+    .mrow-go{padding:6px 9px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    button:not(:disabled):active,a.t-link:active,.pchip:active,.mchip:active,.sc:active,
+    .mchip.mrow:active .mrow-go{transform:none;}
+  }
+
   /* ── 担当者 ──────────────────────── */
   .owner-chip{
     display:inline-block;font-size:13px;color:var(--muted);
@@ -1871,8 +1921,9 @@ function buildFoot(){
   var ul = h('ul');
   [
     '会社名 → 予定 → 細かいタスク、の順に押していくと深くなります。',
+    '丸くて下に段（かげ）が付いているものがボタンです（押すと少し沈みます）。ふちの無い四角い色札（「申請の入力 中」「🤝 お客様の番」など）は表示だけです。予定の行は、右はしの「タスク ▼」を目印に行ごと押せます。',
     'タスクを全部チェックすると予定が緑になり、その業務の予定が全部緑になると、会社一覧のチップが「完了」の表示に変わって左の帯が緑になります。',
-    '業務カードの上には「現在の状況」「工程」「次回対応」「ボール」が必ず出ます。工程の帯は、緑が完了した予定、色つきが現在の予定、白がこれからの予定です。ボールは、いま動く番が🏢こちらか🤝お客様か⏳返事待ちかを表します。',
+    '業務カードの上には「現在の状況」「工程」「次回対応」「ボール」が必ず出ます。工程の帯は、緑が完了した予定、色つきの太いところが現在の予定、灰色がこれからの予定です。ボールは、いま動く番が🏢こちらか🤝お客様か⏳返事待ちかを表します。',
     'パソコンでは、会社ページの「📊 工程ごとの進捗表」で、業務を行・工程を列にした表（進捗表シートと同じ形）に切り替えられます。マスを押すと、表の下にタスクが出ます。どちらで見るかは、この端末が覚えています。',
     '色は2つのことを答えます。カード全体の色は「つぎに動くのはだれか」（🏢こちらがやる＝みどり青／🤝お客様がやる＝ももいろ／⏳返事を待っている＝むらさき／まだ決めていない＝灰）。カード左はしの帯は「いつまでにやるか」（赤＝締切をすぎている、オレンジ＝あと7日以内、青＝まだ余裕がある、緑＝ぜんぶ終わった）。わざと色を変えてあるので、取りちがえません。',
     '会社一覧にならぶ四角も、同じ読み方です。同じ業務は、一覧と予定表で必ず同じ色になります。',
@@ -1967,7 +2018,7 @@ function renderCompany(){
      読み方の詳しい説明は下の「使い方」に置いてある */
   var stageMode = isWide() && layoutMode() === 'stage';
   app.appendChild(h('p', { class: 'page-sub', text: !isWide()
-    ? '予定は締切が近い順です。押すと、その下にタスクが出ます。'
+    ? '予定は締切が近い順です。右の「タスク ▼」を押すと、その下にタスクが出ます。'
     : stageMode ? '横は工程です。マスを押すと、表の下にタスクが出ます。'
     : '横は月ごとの締切です。予定を押すと、その下にタスクが出ます。' }));
   if (isWide()) app.appendChild(layoutSwitch());
@@ -2319,6 +2370,7 @@ function renderMobileList(co, projects){
       cats.appendChild(h('button', {
         class: 'mchip mrow u-' + u + (sel ? ' sel' : ''),
         'aria-expanded': sel ? 'true' : 'false',
+        'aria-label': c.name + '（締切 ' + fmtMD(c.due) + '）' + (sel ? 'のタスクを閉じる' : 'のタスクを開く'),
         onclick: function(){
           if (sel) { closeDetail(); return; }
           VIEW.selCat = c.id;
@@ -2343,6 +2395,13 @@ function renderMobileList(co, projects){
             return sd ? h('span', { class: 'ball ball-sm b-' + sd.value, text: sd.icon + ' ' + sd.label }) : null;
           })(),
           c.owner ? h('span', { class: 'mchip-owner', text: '👤 ' + c.owner }) : null
+        ]),
+        /* 行ぜんたいが押せることを、右はしのボタンの形で見せる。
+           ふつうの一覧に見えて「押せると思わなかった」（本人の指摘 2026-09-19）。
+           押すと下にタスクが開き、この表示が「閉じる ▲」に変わる */
+        h('span', { class: 'mrow-go', 'aria-hidden': 'true' }, [
+          h('span', { class: 'mrow-go-t', text: sel ? '閉じる' : 'タスク' }),
+          h('span', { class: 'mrow-chev', text: sel ? '▲' : '▼' })
         ])
       ]));
       /* 選んだ予定のすぐ下にタスクを開く */
@@ -2631,6 +2690,10 @@ function flash(msg){
   setPill('st-saved', msg);
   setTimeout(function(){ if (!dirty) setPill('', '保存できます', '変更するとすぐに保存されます'); }, 2500);
 }
+
+/* iPhone の Safari は、ページに touchstart の受け口が無いと :active（押している間の見た目）を出さない。
+   押したときにボタンが沈む手ごたえを実機でも出すため、何もしない受け口を置く（本人の指摘 2026-09-19） */
+try { document.addEventListener('touchstart', function(){}, { passive: true }); } catch (e) {}
 
 /* ============================================================
  * 描画
