@@ -706,15 +706,40 @@
   .sg-now{white-space:nowrap;}
   .sg-table .sg-cell{padding:5px;}
   .sg-table .sg-cell.s-none{background:repeating-linear-gradient(135deg,transparent 0 6px,var(--surface-2) 6px 9px);}
-  .sc{width:100%;min-height:var(--tap);border:1.5px solid transparent;border-radius:9px;
-    background:none;font-size:13.5px;font-weight:700;white-space:nowrap;padding:4px 6px;}
+  /* ── 工程のマス ─────────────────────────
+     完了と進行中がどちらも「薄い色の塗り」で見分けにくかった（本人の指摘 2026-09-21）。
+     色みではなく「濃さ」で分ける：
+       いまの工程 … 濃いベタ塗り＋白抜きの字（色はボール）。遠目でも一発で見つかる
+       完了      … 薄い緑の札。終わったことなので静かに置く
+       これから  … 塗らない。点線の枠と灰色の日付だけ
+     どのマスにも、その工程の締切日を下に入れる */
+  .sc{
+    width:100%;min-height:var(--tap);border:2px solid transparent;border-radius:9px;
+    background:none;font-size:13.5px;font-weight:700;white-space:nowrap;padding:5px 6px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  }
+  .sc-t{line-height:1.35;}
+  .sc-d{font-size:12px;font-weight:700;line-height:1.3;opacity:.92;}
+
+  /* 完了：薄い緑の札 */
   .sc.s-done{color:var(--done);background:var(--done-bg);border-color:var(--done-line);}
-  .sc.s-now{color:var(--accent);background:var(--accent-soft);border-color:var(--accent);}
-  .sc.s-now.b-us{color:var(--bus);background:var(--bus-bg);border-color:var(--bus);}
-  .sc.s-now.b-client{color:var(--bcl);background:var(--bcl-bg);border-color:var(--bcl);}
-  .sc.s-now.b-wait{color:var(--hold);background:var(--hold-bg);border-color:var(--hold);}
-  .sc.s-todo{color:var(--muted);font-weight:400;}
+
+  /* いまの工程：濃いベタ塗り＋白抜き。ボールの色をそのまま地にする */
+  .sc.s-now{
+    color:var(--on-accent);background:var(--accent);border-color:var(--accent);
+    box-shadow:0 1px 4px rgba(34,48,58,.28);
+  }
+  .sc.s-now.b-us{background:var(--bus);border-color:var(--bus);}
+  .sc.s-now.b-client{background:var(--bcl);border-color:var(--bcl);}
+  .sc.s-now.b-wait{background:var(--hold);border-color:var(--hold);}
+  .sc.s-now .sc-d{opacity:1;}
+
+  /* これから：塗らない。点線で「まだ手つかず」と見せる */
+  .sc.s-todo{color:var(--muted);font-weight:400;border:1.5px dashed var(--line);background:none;}
+  .sc.s-todo .sc-d{font-weight:500;}
+
   .sc:hover{box-shadow:0 0 0 3px var(--line-strong);}
+  .sc.s-now:hover{box-shadow:0 0 0 3px var(--line-strong),0 1px 4px rgba(34,48,58,.28);}
   .sc.sel{outline:3px solid var(--accent);outline-offset:1px;}
   .sg-due{white-space:nowrap;}
   .sg-due b{display:block;font-size:15.5px;}
@@ -1997,7 +2022,7 @@ function buildFoot(){
     '丸くて下に段（かげ）が付いているものがボタンです（押すと少し沈みます）。ふちの無い四角い色札（「申請の入力 中」「🤝 お客様の番」など）は表示だけです。予定の行は、右はしの「タスク ▼」を目印に行ごと押せます。',
     'タスクを全部チェックすると予定が緑になり、その業務の予定が全部緑になると、会社一覧のチップが「完了」の表示に変わって左の帯が緑になります。',
     '業務カードの上には「現在の状況」「工程」「次回対応」「ボール」が必ず出ます。工程の帯は、緑が完了した予定、色つきの太いところが現在の予定、灰色がこれからの予定です。ボールは、いま動く番が🏢こちらか🤝お客様か⏳返事待ちかを表します。',
-    'パソコンでは、会社ページの「📊 工程ごとの進捗表」で、業務を行・工程を列にした表（進捗表シートと同じ形）に切り替えられます。マスを押すと、表の下にタスクが出ます。どちらで見るかは、この端末が覚えています。',
+    'パソコンで会社をひらくと、まず「📊 工程ごとの進捗表」が出ます（進捗表シートと同じ形。業務が行、工程が列）。マスの中には状態とその工程の締切日が入ります。濃く塗られたマスがいまの工程、うすい緑が完了、点線わくがこれからです。マスを押すと表の下にタスクが出ます。「📅 月ごとの予定表」にも切り替えられ、どちらで見るかはこの端末が覚えています。',
     '色は2つのことを答えます。カード全体の色は「つぎに動くのはだれか」（🏢こちらがやる＝みどり青／🤝お客様がやる＝ももいろ／⏳返事を待っている＝むらさき／まだ決めていない＝灰）。カード左はしの帯は「いつまでにやるか」（赤＝締切をすぎている、オレンジ＝あと7日以内、青＝まだ余裕がある、緑＝ぜんぶ終わった）。わざと色を変えてあるので、取りちがえません。',
     '会社一覧にならぶ四角も、同じ読み方です。同じ業務は、一覧と予定表で必ず同じ色になります。',
     '会社の一覧は、検索するか「すべての会社を見る」を押すまで出ません。会社が増えても、開いた瞬間に全部が縦にならばないようにしてあります。',
@@ -2092,7 +2117,7 @@ function renderCompany(){
   var stageMode = isWide() && layoutMode() === 'stage';
   app.appendChild(h('p', { class: 'page-sub', text: !isWide()
     ? '予定は締切が近い順です。右の「タスク ▼」でタスク、「たたむ ▲」で業務ごとに閉じられます。'
-    : stageMode ? '横は工程です。マスを押すと、表の下にタスクが出ます。'
+    : stageMode ? '横は工程、マスの数字はその工程の締切です。濃く塗られたマスがいまの工程。押すと下にタスクが出ます。'
     : '横は月ごとの締切です。予定を押すと、その下にタスクが出ます。' }));
   if (isWide()) app.appendChild(layoutSwitch());
   app.classList.toggle('is-wide-table', stageMode);
@@ -2242,8 +2267,16 @@ function nowLabel(c){
   if (!sd) return '● 進行中';
   return '● ' + (sd.value === 'wait' ? sd.label : sd.short);
 }
-function stageText(stg, c){
-  return stg === 'done' ? '✓ 完了' : stg === 'now' ? nowLabel(c) : stg === 'todo' ? '－' : '';
+/* マスの中身。上に状態、下にその工程の締切日を入れる。
+   日付が無いと「いつまでの工程か」を右端の次回予定日まで目を往復させないと読めなかった
+   （本人の指示 2026-09-21）。これからの工程は日付だけにする（点線の枠で「まだ」と分かる） */
+function stageCell(stg, c){
+  if (stg === 'none' || !c) return [];
+  var label = stg === 'done' ? '✓ 完了' : stg === 'now' ? nowLabel(c) : '';
+  var out = [];
+  if (label) out.push(h('span', { class: 'sc-t', text: label }));
+  out.push(h('span', { class: 'sc-d num', text: fmtMD(c.due) }));
+  return out;
 }
 /* 業務カードの「工程」の行。予定の数だけ区切った帯で、どこまで進んだかを見せる */
 function stepBar(p){
@@ -2299,9 +2332,8 @@ function renderStageTable(co, projects){
           + (stg === 'done' ? '完了' : stg === 'now' ? '現在の工程 ' + nowLabel(c).slice(2) : 'これから')
           + '（締切 ' + fmtMD(c.due) + '）',
         title: c.name + '（締切 ' + fmtMD(c.due) + '）',
-        text: stageText(stg, c),
         onclick: function(){ VIEW.selCat = c.id; storeView(); render(); }
-      }));
+      }, stageCell(stg, c)));
       tr.appendChild(td);
     });
     tr.appendChild(h('td', { class: 'sg-due num' + (st.cat ? ' u-' + urgency(st.cat.due, false) : '') },
@@ -2372,10 +2404,13 @@ function foldBar(projects){
   ]);
 }
 
-/* 月ごと／工程ごと。どちらで見るかはこの端末に覚えさせる（業務データには入れない） */
-var LAYOUT_KEY = 'shimekiri-layout';
+/* 月ごと／工程ごと。どちらで見るかはこの端末に覚えさせる（業務データには入れない）。
+   会社を開いたら、まず工程ごとの進捗表を出す（本人の指示 2026-09-21）。
+   ⚠ キーを shimekiri-layout2 に変えてあるのは、前の版で「月ごと」を選んだ端末に
+      古い設定が残っていると、新しい既定が効かないため */
+var LAYOUT_KEY = 'shimekiri-layout2';
 function layoutMode(){
-  try { return localStorage.getItem(LAYOUT_KEY) === 'stage' ? 'stage' : 'month'; } catch (e) { return 'month'; }
+  try { return localStorage.getItem(LAYOUT_KEY) === 'month' ? 'month' : 'stage'; } catch (e) { return 'stage'; }
 }
 function setLayout(v){
   try { localStorage.setItem(LAYOUT_KEY, v); } catch (e) {}
