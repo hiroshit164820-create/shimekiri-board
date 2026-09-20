@@ -669,11 +669,16 @@
   .step.s-now.b-wait{background:var(--hold);border-color:var(--hold);}
   .steps-n{flex:0 0 auto;font-size:12.5px;color:var(--muted);}
 
-  /* ── 月ごと／工程ごとの切り替え（広い画面だけ） ───── */
+  /* ── 月ごと／工程ごとの切り替え ───── */
   .layout-sw{display:inline-flex;border:1.5px solid var(--line-strong);border-radius:999px;
     overflow:hidden;margin:0 0 12px;background:var(--surface);}
   .layout-sw button{min-height:var(--tap);border:none;background:none;color:var(--muted);
-    padding:6px 18px;font-size:14px;}
+    padding:6px 18px;font-size:14px;white-space:nowrap;}
+  /* スマホでは横いっぱいに広げて、2つを半分ずつにする */
+  @media (max-width:759px){
+    .layout-sw{display:flex;width:100%;}
+    .layout-sw button{flex:1 1 0;padding:6px 8px;font-size:13.5px;}
+  }
   .layout-sw button + button{border-left:1.5px solid var(--line-strong);}
   .layout-sw button.sel{background:var(--accent);color:var(--on-accent);font-weight:700;}
   .layout-sw button:not(.sel):hover{color:var(--accent);background:var(--accent-soft);}
@@ -749,6 +754,24 @@
   .sg-table .sg-next{min-width:170px;max-width:260px;text-align:left;font-weight:700;color:var(--ink);
     overflow-wrap:anywhere;line-height:1.55;}
   .sg-table .sg-next.is-none{font-weight:400;color:var(--muted);}
+  /* スマホでも工程表を見られるようにする（横に動かして読む）。
+     指の当たる高さ（--tap）は保ったまま、横幅だけを詰める */
+  @media (max-width:759px){
+    .sg-table{font-size:13px;}
+    .sg-table th,.sg-table td{padding:5px 6px;}
+    .sg-table thead th{font-size:12px;}
+    .sg-table .sg-name{min-width:122px;max-width:138px;}
+    .sg-title{font-size:14px;}
+    .sg-name .p-ico{width:24px;height:24px;font-size:14px;border-radius:7px;margin-right:5px;}
+    .sg-table thead th.sg-stage{min-width:74px;}
+    .sg-table .sg-cell{padding:4px;}
+    .sc{font-size:12.5px;padding:4px 3px;}
+    .sc-d{font-size:11.5px;}
+    .sg-due b{font-size:14px;}
+    .sg-due span{font-size:11.5px;}
+    .sg-table .sg-next{min-width:140px;max-width:190px;font-size:13px;}
+    .st-badge{font-size:12.5px;padding:3px 9px;}
+  }
 
   /* ── 押せるもの／押せないものの見分け（本人の指摘 2026-09-19） ─────────
      実機で「どれが押せるのか、押すと何が変わるのか分からない」と言われた。
@@ -2022,7 +2045,7 @@ function buildFoot(){
     '丸くて下に段（かげ）が付いているものがボタンです（押すと少し沈みます）。ふちの無い四角い色札（「申請の入力 中」「🤝 お客様の番」など）は表示だけです。予定の行は、右はしの「タスク ▼」を目印に行ごと押せます。',
     'タスクを全部チェックすると予定が緑になり、その業務の予定が全部緑になると、会社一覧のチップが「完了」の表示に変わって左の帯が緑になります。',
     '業務カードの上には「現在の状況」「工程」「次回対応」「ボール」が必ず出ます。工程の帯は、緑が完了した予定、色つきの太いところが現在の予定、灰色がこれからの予定です。ボールは、いま動く番が🏢こちらか🤝お客様か⏳返事待ちかを表します。',
-    'パソコンで会社をひらくと、まず「📊 工程ごとの進捗表」が出ます（進捗表シートと同じ形。業務が行、工程が列）。マスの中には状態とその工程の締切日が入ります。濃く塗られたマスがいまの工程、うすい緑が完了、点線わくがこれからです。マスを押すと表の下にタスクが出ます。「📅 月ごとの予定表」にも切り替えられ、どちらで見るかはこの端末が覚えています。',
+    '会社ページの上で「📊 工程ごとの進捗表」に切り替えると、進捗表シートと同じ形の表になります（業務が行、工程が列）。マスの中は状態とその工程の締切日。濃く塗られたマスがいまの工程、うすい緑が完了、点線わくがこれからです。マスを押すと表の下にタスクが出ます。スマホでも見られます（指で横になぞると続きが出ます）。パソコンでは会社をひらいた時点でこの表から始まり、スマホは予定ごとの並びから始まります。どちらで見るかはこの端末が覚えています。',
     '色は2つのことを答えます。カード全体の色は「つぎに動くのはだれか」（🏢こちらがやる＝みどり青／🤝お客様がやる＝ももいろ／⏳返事を待っている＝むらさき／まだ決めていない＝灰）。カード左はしの帯は「いつまでにやるか」（赤＝締切をすぎている、オレンジ＝あと7日以内、青＝まだ余裕がある、緑＝ぜんぶ終わった）。わざと色を変えてあるので、取りちがえません。',
     '会社一覧にならぶ四角も、同じ読み方です。同じ業務は、一覧と予定表で必ず同じ色になります。',
     '会社の一覧は、検索するか「すべての会社を見る」を押すまで出ません。会社が増えても、開いた瞬間に全部が縦にならばないようにしてあります。',
@@ -2114,13 +2137,19 @@ function renderCompany(){
   /* 説明は1行だけにする。スマホでは頭の説明が3〜4行あると、
      肝心の予定が画面に入らなかった（本人の指摘 2026-09-03）。
      読み方の詳しい説明は下の「使い方」に置いてある */
-  var stageMode = isWide() && layoutMode() === 'stage';
-  app.appendChild(h('p', { class: 'page-sub', text: !isWide()
+  /* 工程ごとの進捗表は、スマホでも見られる（横に動かして読む）。
+     以前は広い画面だけに出していたが、本人から「スマホでは見られないのか」と問われた（2026-09-21） */
+  var stageMode = layoutMode() === 'stage';
+  app.appendChild(h('p', { class: 'page-sub', text: stageMode
+    ? (isWide()
+        ? '横は工程、マスの数字はその工程の締切です。濃く塗られたマスがいまの工程。押すと下にタスクが出ます。'
+        : '横は工程です。指で横になぞると続きが見られます。濃く塗られたマスがいまの工程で、数字はその工程の締切です。')
+    : !isWide()
     ? '予定は締切が近い順です。右の「タスク ▼」でタスク、「たたむ ▲」で業務ごとに閉じられます。'
-    : stageMode ? '横は工程、マスの数字はその工程の締切です。濃く塗られたマスがいまの工程。押すと下にタスクが出ます。'
     : '横は月ごとの締切です。予定を押すと、その下にタスクが出ます。' }));
-  if (isWide()) app.appendChild(layoutSwitch());
-  app.classList.toggle('is-wide-table', stageMode);
+  app.appendChild(layoutSwitch());
+  /* 本文の幅を広げるのは、広い画面で工程表を出しているときだけ */
+  app.classList.toggle('is-wide-table', stageMode && isWide());
 
   app.appendChild(sumBar(coSummary(co)));
   /* 色の読み解きは第1層と同じ部品。ふだんはたたんでおく */
@@ -2153,12 +2182,12 @@ function renderCompany(){
     ]);
     empty.style.padding = '16px 18px';
     app.appendChild(empty);
+  } else if (stageMode) {
+    app.appendChild(renderStageTable(co, projects));
   } else if (!isWide()) {
     /* 業務が1件だけなら、たたむ意味がないのでバーを出さない */
     if (projects.length > 1) app.appendChild(foldBar(projects));
     app.appendChild(renderMobileList(co, projects));
-  } else if (stageMode) {
-    app.appendChild(renderStageTable(co, projects));
   } else {
     var months = monthRange(projects);
     var nowYm = todayStr().slice(0, 7);
@@ -2210,8 +2239,10 @@ function renderCompany(){
     app.appendChild(h('div', { class: 'tl-card' }, [tw.box]));
   }
 
-  /* 狭い画面では、選んだ予定のすぐ下にタスクを出しているのでここには置かない */
-  if (isWide()) app.appendChild(renderDetail(co));
+  /* 予定の縦並び（スマホ）のときは、選んだ予定のすぐ下にタスクを出しているのでここには置かない。
+     工程ごとの表は、広い画面でもスマホでも表の下に出す（スマホで出し忘れ、
+     マスを押しても何も起きない状態になっていた。2026-09-21 実測で発見） */
+  if (isWide() || stageMode) app.appendChild(renderDetail(co));
   /* 迷わないよう、すすめたい「ひな形から」を塗りの主ボタンにする */
   app.appendChild(h('div', { class: 'btn-row' }, [
     h('button', { class: 'btn-add primary', text: '＋ ひな形から業務を追加', onclick: function(){ addProject(co, true); } }),
@@ -2332,7 +2363,13 @@ function renderStageTable(co, projects){
           + (stg === 'done' ? '完了' : stg === 'now' ? '現在の工程 ' + nowLabel(c).slice(2) : 'これから')
           + '（締切 ' + fmtMD(c.due) + '）',
         title: c.name + '（締切 ' + fmtMD(c.due) + '）',
-        onclick: function(){ VIEW.selCat = c.id; storeView(); render(); }
+        onclick: function(){
+          VIEW.selCat = c.id;
+          storeView();
+          render();
+          /* スマホでは表の下に出るので、画面の外に出ないよう寄せる */
+          if (!isWide()) scrollDetailIntoView();
+        }
       }, stageCell(stg, c)));
       tr.appendChild(td);
     });
@@ -2410,7 +2447,13 @@ function foldBar(projects){
       古い設定が残っていると、新しい既定が効かないため */
 var LAYOUT_KEY = 'shimekiri-layout2';
 function layoutMode(){
-  try { return localStorage.getItem(LAYOUT_KEY) === 'month' ? 'month' : 'stage'; } catch (e) { return 'stage'; }
+  try {
+    var v = localStorage.getItem(LAYOUT_KEY);
+    if (v === 'month' || v === 'stage') return v;
+  } catch (e) {}
+  /* まだ選んでいないとき：広い画面は工程ごとの進捗表、スマホは予定の縦並び。
+     スマホで工程表を先に出すと、横に動かさないとタスクに手が届かないため */
+  return isWide() ? 'stage' : 'month';
 }
 function setLayout(v){
   try { localStorage.setItem(LAYOUT_KEY, v); } catch (e) {}
@@ -2418,10 +2461,14 @@ function setLayout(v){
 }
 function layoutSwitch(){
   var cur = layoutMode();
+  var w = isWide();
+  /* スマホでは長い名前が2行に折れるので短くする。読み上げには長い名前を残す */
   return h('div', { class: 'layout-sw', role: 'group', 'aria-label': '表の見かた' },
-    [['month', '📅 月ごとの予定表'], ['stage', '📊 工程ごとの進捗表']].map(function(x){
+    [['month', w ? '📅 月ごとの予定表' : '📅 予定ごと', '月ごとの予定表で見る'],
+     ['stage', w ? '📊 工程ごとの進捗表' : '📊 工程ごと', '工程ごとの進捗表で見る']].map(function(x){
       return h('button', { type: 'button', class: cur === x[0] ? 'sel' : '',
         'aria-pressed': cur === x[0] ? 'true' : 'false', text: x[1],
+        'aria-label': x[2], title: x[2],
         onclick: function(){ if (layoutMode() !== x[0]) setLayout(x[0]); } });
     }));
 }
@@ -2511,7 +2558,8 @@ function closeDetail(){
 
 /* 開いたタスクが画面の下に隠れたままにならないよう寄せる */
 function scrollDetailIntoView(){
-  var det = app.querySelector('.mcats .detail');
+  /* 予定の縦並びでは業務カードの中、工程ごとの表では表の下に出る */
+  var det = app.querySelector('.mcats .detail') || app.querySelector('.detail');
   if (!det || !det.scrollIntoView) return;
   var soft = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   try { det.scrollIntoView({ block: 'nearest', behavior: soft ? 'smooth' : 'auto' }); }
