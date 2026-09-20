@@ -2,9 +2,17 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>各社しめきりボード</title>
 <meta name="description" content="会社ごとの締切と「つぎに動くのはだれか」を、スマホで見るためのボードです。">
 <meta name="color-scheme" content="light dark">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2F5D9E">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="しめきりボード">
 <style>
   html,body{margin:0;padding:0;}
   body{font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#22303A;}
@@ -239,7 +247,12 @@
 
   .strip-box{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:0 0 6px;}
   .strip-box .scroll-hint{padding:0 14px 4px;}
-  .chip-strip{display:flex;align-items:center;gap:10px;padding:12px 14px;}
+  /* 並んだチップは同じ高さにする。align-items:center のままだと、
+     ボールの札があるチップだけ背が高くなり、段違いに見えた（本人の指摘 2026-09-21）。
+     stretch でそろえ、ボールの札はどのチップでも下端にそろえる */
+  .chip-strip{display:flex;align-items:stretch;gap:10px;padding:12px 14px;}
+  /* 「＋ 業務」は伸ばさない（縦長のボタンになってしまう） */
+  .chip-strip .btn-add-sm{align-self:center;}
   .chip-strip .pchip,.chip-strip .btn-add-sm{scroll-snap-align:start;}
   /* 会社一覧の業務チップ。第2層の業務カードとまったく同じ塗り分けにしてある。
        枠と地      ＝ だれの番か（ボール）
@@ -284,6 +297,9 @@
   .pchip.u-done .pchip-date{color:var(--done);}
   /* 色だけに頼らせないための、チップの中のボール表示。地が色つきなので白ピルにする */
   .pchip .ball.ball-xs{
+    /* 上の3つ（アイコン・日付・業務名）は上から詰め、ボールだけ下端にそろえる。
+       ボールが無いチップとも、アイコンと日付の位置がそろう */
+    margin-top:auto;
     font-size:11.5px;font-weight:700;padding:1px 7px;border-width:1px;gap:3px;
     max-width:100px;overflow:hidden;text-overflow:ellipsis;background:var(--surface);
   }
@@ -785,6 +801,31 @@
     .mchip.mrow:active .mrow-go{transform:none;}
   }
 
+  /* ── 依頼文・指示文 ──────────────────
+     受任案件の進みぐあいを見ながら「だれに何を頼むか」を毎回書き写していた。
+     ボール・期限・タスクはこの画面に全部あるので、そこから文面を組み立てる */
+  .btn-req{
+    border:1.5px solid var(--accent);background:var(--accent);color:var(--on-accent);
+    border-radius:999px;padding:6px 14px;font-size:13.5px;font-weight:700;white-space:nowrap;
+    min-height:var(--tap);display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  }
+  .btn-req:hover{filter:brightness(1.08);}
+  .req-modes{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;}
+  .req-modes button{
+    flex:1 1 auto;min-height:var(--tap);border:1.5px solid var(--line-strong);
+    background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 12px;
+    font-size:13.5px;display:inline-flex;align-items:center;justify-content:center;
+  }
+  .req-modes button.sel{border-color:var(--accent);background:var(--accent);color:var(--on-accent);font-weight:700;}
+  .req-text{
+    width:100%;min-height:210px;font-family:inherit;font-size:15px;line-height:1.8;
+    color:var(--ink);background:var(--surface);border:1.5px solid var(--line);
+    border-radius:10px;padding:11px 12px;resize:vertical;
+  }
+  .req-note{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.7;}
+  .req-note.ok{color:var(--done);font-weight:700;}
+  .req-note.ng{color:var(--late);font-weight:700;}
+
   /* ── 担当者 ──────────────────────── */
   .owner-chip{
     display:inline-block;font-size:13px;color:var(--muted);
@@ -1061,13 +1102,13 @@ if (window.claude && typeof window.claude.use === 'function') {
   window.claude.use('artifact').then(function(ns){
     nsSettled = true;
     artifactNS = ns;
-    if (!ns) setPill('', 'お試し表示', 'お試し表示です。この画面では変更は保存されません');
+    if (!ns) setPill('', '閲覧用', '閲覧用の画面です。ここでの変更は保存されません（更新はボードの持ち主が行います）');
     else if (!dirty) setPill('', '保存できます', '変更するとすぐに保存されます');
     refreshSaveUI();
   });
 } else {
   nsSettled = true;
-  setPill('', 'お試し表示', 'お試し表示です。この画面では変更は保存されません');
+  setPill('', '閲覧用', '閲覧用の画面です。ここでの変更は保存されません（更新はボードの持ち主が行います）');
 }
 
 function scheduleSave(){
@@ -1080,7 +1121,7 @@ function scheduleSave(){
 function doSave(){
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
   if (!nsSettled) { saveTimer = setTimeout(doSave, 800); return; }
-  if (!artifactNS) { setPill('', 'お試し表示', 'お試し表示です。この画面では変更は保存されません'); return; }
+  if (!artifactNS) { setPill('', '閲覧用', '閲覧用の画面です。ここでの変更は保存されません（更新はボードの持ち主が行います）'); return; }
   if (readonly) { setPill('', '閲覧のみ', '閲覧のみのモードです。変更は保存されません'); return; }
   setPill('', '保存中…');
   var html;
@@ -1875,7 +1916,7 @@ function companyRow(co, projects, sum){
     /* 業務名は幅に収まらないと「…」で切れるので、読み上げには全文を渡す */
     var chipLabel = x.p.name + '（次の締切 ' + fmtMD(x.due)
                   + (x.done ? '・ぜんぶ完了' : '・' + whenLabel(x.due)) + '）'
-                  + (sd ? ' / ' + sd.icon + ' ' + sd.label : '');
+                  + (sd ? ' / ' + sd.icon + ' ' + sd.label : (x.done ? '' : ' / 番が未定'));
     strip.appendChild(h('button', {
       class: 'pchip u-' + u + ' b-' + bk,
       title: chipLabel,
@@ -1885,7 +1926,11 @@ function companyRow(co, projects, sum){
       h('span', { class: 'pchip-icon', text: x.p.icon || DEFAULT_ICON }),
       h('span', { class: 'pchip-date num', text: x.done ? '完了' : fmtMD(x.due) }),
       h('span', { class: 'pchip-name', text: x.p.name }),
-      sd ? h('span', { class: 'ball ball-xs b-' + bk, text: sd.icon + ' ' + sd.short }) : null
+      /* 番が決まっていないチップにも札を出す。出さないとそこだけ下が空いて、
+         そろえた高さの中で「抜け」に見えた（本人の指摘 2026-09-21）。
+         凡例の「まだ決めていない」と同じ意味で、決め忘れにも気づける */
+      sd ? h('span', { class: 'ball ball-xs b-' + bk, text: sd.icon + ' ' + sd.short })
+         : h('span', { class: 'ball ball-xs b-none', title: 'いま動く番が決まっていません', text: '未定' })
     ]));
   });
   strip.appendChild(h('button', { class: 'btn-add-sm', text: '＋ 業務', onclick: function(){ addProject(co); } }));
@@ -2554,7 +2599,11 @@ function renderDetail(co){
       return sd ? h('span', { class: 'ball b-' + sd.value, text: sd.icon + ' ' + sd.label }) : null;
     })(),
     c.owner ? h('span', { class: 'owner-chip', text: '👤 ' + c.owner }) : null,
-    h('button', { class: 'icon-btn', text: '✏️ 編集', onclick: function(){ editCategory(co, p, c); } })
+    h('button', { class: 'icon-btn', text: '✏️ 編集', onclick: function(){ editCategory(co, p, c); } }),
+    /* この予定から、取引先への依頼文・社内への指示文をつくる */
+    h('button', { class: 'btn-req', type: 'button', text: '📨 依頼文',
+      'aria-label': c.name + 'の依頼文をつくる',
+      onclick: function(){ openRequestDlg(co, p, c); } })
   ]));
 
   var ul = h('ul', { class: 'task-list' });
@@ -2609,6 +2658,156 @@ function renderDetail(co){
   box.appendChild(h('button', { class: 'detail-close-foot', type: 'button', text: '▲ このタスク一覧を閉じる',
     onclick: closeDetail }));
   return box;
+}
+
+/* ============================================================
+ * 依頼文・指示文
+ *
+ * 助成金の受任案件は「こちらが作る → お客様に出してもらう → 労働局を待つ」の
+ * くり返しで、そのたびに同じ文面を書いている。
+ * ボール（だれの番か）・期限・未了のタスクはこの画面に揃っているので、
+ * そこから文面を組み立てて、コピーして LINE やメールに貼れるようにする。
+ * ============================================================ */
+function limitLine(c){
+  var n = daysUntil(c.due);
+  if (!c.due) return '期限：未定';
+  return '期限：' + fmtMD(c.due) + (
+      n === null ? ''
+    : n < 0  ? '（すでに過ぎています）'
+    : n === 0 ? '（本日まで）'
+    : n === 1 ? '（明日まで）'
+    : '（あと' + n + '日）');
+}
+/* 残っているタスク。全部済んでいるときは、何の話か分かるよう全件を出す */
+function reqTasks(c){
+  var undone = c.tasks.filter(function(t){ return !t.done; });
+  return undone.length ? undone : c.tasks;
+}
+function reqLinks(c){
+  var seen = {}, out = [];
+  reqTasks(c).forEach(function(t){
+    var u = safeUrl(t.url);
+    if (u && !seen[u]) { seen[u] = 1; out.push(u); }
+  });
+  return out;
+}
+/* 取引先あて。お願いする文面なので、社内の符丁（ボール・工程）は持ち込まない */
+function reqTextClient(co, p, c){
+  var L = ['【' + p.name + '】' + c.name + 'のお願い', '',
+           co.name + ' ご担当者様', 'いつもお世話になっております。', '',
+           '「' + p.name + '」の手続きにつきまして、下記のご対応をお願いいたします。'];
+  reqTasks(c).forEach(function(t){ L.push('・' + t.name); });
+  L.push('', limitLine(c));
+  var links = reqLinks(c);
+  if (links.length) { L.push(''); links.forEach(function(u){ L.push('参考：' + u); }); }
+  L.push('', 'ご不明な点がありましたら、お気軽にご連絡ください。',
+         'どうぞよろしくお願いいたします。');
+  return L.join('\n');
+}
+/* 社内あて。だれが・いつまでに・何をするかだけを短く */
+function reqTextStaff(co, p, c){
+  var sd = sideOf(c);
+  var L = ['【' + co.name + '／' + p.name + '】' + c.name,
+           '担当：' + (c.owner ? c.owner : '未定'),
+           limitLine(c),
+           'いまの番：' + (sd ? sd.label : '未定'), '', 'やること'];
+  reqTasks(c).forEach(function(t){ L.push('・' + t.name + (t.note ? '（' + t.note + '）' : '')); });
+  var links = reqLinks(c);
+  if (links.length) { L.push(''); links.forEach(function(u){ L.push('参考：' + u); }); }
+  return L.join('\n');
+}
+/* 取引先への進捗のお知らせ。こちらが動いている間・審査を待っている間に使う */
+function reqTextReport(co, p, c){
+  var sd = sideOf(c);
+  var where = sd && sd.value === 'wait' ? '現在、審査の結果を待っている状況です。'
+            : sd && sd.value === 'us'   ? '現在、当方で作業を進めております。'
+            : '現在の進みぐあいをお知らせいたします。';
+  var L = ['【' + p.name + '】進捗のご報告', '',
+           co.name + ' ご担当者様', 'いつもお世話になっております。', '',
+           '「' + p.name + '」は「' + c.name + '」の段階です。', where, '',
+           limitLine(c), '',
+           '動きがありましたら、あらためてご連絡いたします。',
+           '引き続きよろしくお願いいたします。'];
+  return L.join('\n');
+}
+/* どの文面を最初に出すかは、ボール（だれの番か）で決める */
+function reqDefaultMode(c){
+  var sd = sideOf(c);
+  if (!sd) return 'staff';
+  if (sd.value === 'client') return 'client';
+  if (sd.value === 'wait') return 'report';
+  return 'staff';
+}
+/* クリップボードは iframe の中で断られることがあるので、
+   古い execCommand まで順に試し、それも駄目なら選択状態にして手で写してもらう */
+function copyText(area, done){
+  var text = area.value;
+  function fallback(){
+    try {
+      area.focus();
+      area.setSelectionRange(0, text.length);
+      var ok = document.execCommand && document.execCommand('copy');
+      done(!!ok, ok ? '' : 'この画面ではコピーできませんでした。文面を長押し（右クリック）して写してください。');
+    } catch (e) {
+      done(false, 'この画面ではコピーできませんでした。文面を長押し（右クリック）して写してください。');
+    }
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function(){ done(true, ''); }, fallback);
+  } else fallback();
+}
+function openRequestDlg(co, p, c){
+  closeDlg();
+  var modes = [
+    { key: 'client', label: '🤝 取引先に頼む', make: reqTextClient },
+    { key: 'staff',  label: '🏢 社内に指示',   make: reqTextStaff },
+    { key: 'report', label: '📣 進捗を伝える', make: reqTextReport }
+  ];
+  var cur = reqDefaultMode(c);
+  var area = h('textarea', { class: 'req-text', 'aria-label': '送る文面（直せます）' });
+  var note = h('div', { class: 'req-note',
+    text: '文面はここで直せます。コピーしてLINEやメールに貼ってください。' });
+  var bar = h('div', { class: 'req-modes', role: 'group', 'aria-label': 'だれに送るか' });
+  function fill(){
+    var m = modes.filter(function(x){ return x.key === cur; })[0];
+    area.value = m.make(co, p, c);
+    Array.prototype.forEach.call(bar.children, function(b){
+      var on = b.dataset.mode === cur;
+      b.className = on ? 'sel' : '';
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  modes.forEach(function(m){
+    var b = h('button', { type: 'button', text: m.label, onclick: function(){
+      cur = m.key;
+      note.className = 'req-note';
+      note.textContent = '文面はここで直せます。コピーしてLINEやメールに貼ってください。';
+      fill();
+    } });
+    b.dataset.mode = m.key;
+    bar.appendChild(b);
+  });
+
+  var btnCopy = h('button', { class: 'primary', type: 'button', text: '📋 コピーする', onclick: function(){
+    copyText(area, function(ok, msg){
+      note.className = 'req-note ' + (ok ? 'ok' : 'ng');
+      note.textContent = ok ? '✓ コピーしました。LINEやメールに貼ってください。' : msg;
+    });
+  } });
+
+  var dlg = h('div', { class: 'dlg', role: 'dialog', 'aria-modal': 'true' }, [
+    h('h2', { text: '依頼文をつくる' }),
+    h('p', { class: 'dlg-lead', text: co.name + '／' + p.name + '／' + c.name + ' から作りました。' }),
+    bar, area, note,
+    h('div', { class: 'dlg-actions' }, [
+      btnCopy,
+      h('button', { class: 'ghost', type: 'button', text: '閉じる', onclick: closeDlg })
+    ])
+  ]);
+  var back = h('div', { class: 'dlg-backdrop', onclick: function(ev){ if (ev.target === back) closeDlg(); } }, [dlg]);
+  back.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeDlg(); });
+  dlgRoot.appendChild(back);
+  fill();
 }
 
 /* ============================================================
@@ -2831,5 +3030,14 @@ window.__shimekiri = {
 })();
 </script>
 
+<script>
+/* ホーム画面から開けるようにする。中身の更新を止めないよう、
+   取得はネットが先・キャッシュは非常用（決めているのは sw.js の側） */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+</script>
 </body>
 </html>
