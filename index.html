@@ -804,6 +804,48 @@
   .steps .step{height:10px;}
   .steps .step.s-now{height:16px;}
 
+  /* ── 工程ごとの縦型（スマホ） ─────────────────
+     表のマスを行に伸ばしたもの。塗り分けの決まりは表と同じ：
+       いまの工程 … 行ごと濃いベタ塗り（色はボール）
+       完了      … うすい緑
+       これから  … 塗らない */
+  .mchip.mrow.sgm-step{gap:10px;}
+  .sgm-mark{flex:0 0 auto;width:20px;text-align:center;font-size:15px;font-weight:700;line-height:1.3;}
+  .sgm-body{flex:1 1 auto;min-width:0;text-align:left;}
+  .sgm-name{display:block;font-size:15.5px;font-weight:700;line-height:1.45;overflow-wrap:anywhere;}
+  .sgm-sub{display:block;font-size:12.5px;color:var(--muted);}
+  .sgm-date{flex:0 0 auto;text-align:right;line-height:1.3;}
+  .sgm-date-k{display:block;font-size:11px;letter-spacing:.04em;color:var(--muted);}
+  .sgm-date b{display:block;font-size:16px;font-weight:700;}
+
+  /* 完了：うすい緑 */
+  .mchip.mrow.sgm-step.s-done{background:var(--done-bg);border-left-color:var(--done);}
+  .mchip.mrow.sgm-step.s-done .sgm-mark,
+  .mchip.mrow.sgm-step.s-done .sgm-name,
+  .mchip.mrow.sgm-step.s-done .sgm-date b{color:var(--done);}
+  .mchip.mrow.sgm-step.s-done .sgm-sub,
+  .mchip.mrow.sgm-step.s-done .sgm-date-k{color:var(--done);opacity:.85;}
+
+  /* いまの工程：行ごと濃く塗る。字は白抜き */
+  .mchip.mrow.sgm-step.s-now{background:var(--accent);border-left-color:var(--accent);}
+  .mchip.mrow.sgm-step.s-now.b-us{background:var(--bus);border-left-color:var(--bus);}
+  .mchip.mrow.sgm-step.s-now.b-client{background:var(--bcl);border-left-color:var(--bcl);}
+  .mchip.mrow.sgm-step.s-now.b-wait{background:var(--hold);border-left-color:var(--hold);}
+  .mchip.mrow.sgm-step.s-now .sgm-mark,
+  .mchip.mrow.sgm-step.s-now .sgm-name,
+  .mchip.mrow.sgm-step.s-now .sgm-sub,
+  .mchip.mrow.sgm-step.s-now .sgm-date-k,
+  .mchip.mrow.sgm-step.s-now .sgm-date b{color:var(--on-accent);}
+  /* 塗りの上では「タスク ▼」が沈むので、白地に戻して浮かせる */
+  .mchip.mrow.sgm-step.s-now .mrow-go{background:var(--surface);border-color:var(--surface);}
+  .mchip.mrow.sgm-step.s-now.sel{background:var(--accent);}
+  .mchip.mrow.sgm-step.s-now.sel .mrow-go{background:var(--surface);color:var(--accent);}
+
+  /* これから：塗らない */
+  .mchip.mrow.sgm-step.s-todo{background:none;border-left-color:var(--line);}
+  .mchip.mrow.sgm-step.s-todo .sgm-name{color:var(--muted);font-weight:500;}
+  .mchip.mrow.sgm-step.s-todo .sgm-date b{color:var(--muted);}
+
   /* 予定の行の右はし「タスク ▼」。行ぜんたいが押せることを示す */
   .mrow-go{
     flex:0 0 auto;align-self:center;display:inline-flex;align-items:center;gap:4px;
@@ -1035,7 +1077,7 @@
 <main id="app"></main>
 <div id="dlgRoot"></div>
 
-<script type="application/json" id="app-state">{"companies":[{"id":"co-a","name":"A社（サンプル）","projects":[{"id":"p-a1","name":"IT導入補助金","icon":"💻","categories":[{"id":"m-a1a","name":"書類あつめ","due":"2026-09-10","tasks":[{"id":"t-01","name":"見積書をもらう","done":true},{"id":"t-02","name":"決算書のコピーを用意","done":true},{"id":"t-03","name":"gBizIDを取得する","done":true}]},{"id":"m-a1b","name":"申請の入力","due":"2026-09-25","tasks":[{"id":"t-04","name":"事業計画の下書き","done":false},{"id":"t-05","name":"入力内容の最終チェック","done":false}],"side":"client","owner":""},{"id":"m-a1c","name":"交付決定後の手続き","due":"2026-11-16","tasks":[{"id":"t-06","name":"発注・契約をすませる","done":false},{"id":"t-07","name":"支払いの記録を残す","done":false}]},{"id":"m-hyftqkx","name":"書類入力","due":"2026-10-02","side":"client","owner":"","tasks":[]}]},{"id":"p-a2","name":"業務改善助成金","icon":"🛠️","categories":[{"id":"m-a2a","name":"見積もり集め","due":"2026-08-20","tasks":[{"id":"t-08","name":"機器の見積もりを2社分もらう","done":true}]},{"id":"m-a2b","name":"賃金引上げ計画","due":"2026-10-05","tasks":[{"id":"t-09","name":"対象者リストをつくる","done":false},{"id":"t-10","name":"引上げ後の賃金表をつくる","done":false}]}]}]},{"id":"co-b","name":"B社（サンプル）","projects":[{"id":"p-b1","name":"持続化補助金","icon":"🏪","categories":[{"id":"m-b1a","name":"様式の作成","due":"2026-09-18","tasks":[{"id":"t-11","name":"様式2 経営計画をつくる","done":true},{"id":"t-12","name":"様式3 補助事業計画をつくる","done":false}]},{"id":"m-b1b","name":"商工会議所の確認","due":"2026-10-01","tasks":[{"id":"t-13","name":"支援計画書（様式4）を依頼する","done":false}]}]},{"id":"p-b2","name":"ホームページ更新","icon":"🌐","categories":[{"id":"m-b2a","name":"原稿づくり","due":"2026-09-05","tasks":[{"id":"t-14","name":"新メニューの文章を書く","done":true},{"id":"t-15","name":"写真を選ぶ","done":true}]}]}]},{"id":"co-c","name":"C社（サンプル）","projects":[{"id":"p-c1","name":"採用（求人）","icon":"👥","categories":[{"id":"m-c1a","name":"求人票づくり","due":"2026-12-10","tasks":[{"id":"t-16","name":"仕事内容を整理する","done":false}]}]}]},{"id":"co-d","name":"D社（サンプル）","projects":[{"id":"p-d01","name":"賞与退職金導入","icon":"💰","categories":[{"id":"m-d01-1","name":"書類準備","due":"2026-05-14","owner":"","tasks":[{"id":"t-d01-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d01-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d01-2","name":"計画届","due":"2026-06-13","owner":"","tasks":[{"id":"t-d01-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d01-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d01-3","name":"就業規則改定","due":"2026-07-13","owner":"","tasks":[{"id":"t-d01-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d01-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d01-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d01-4","name":"計画実施","due":"2026-08-12","owner":"","side":"us","tasks":[{"id":"t-d01-4-1","name":"ラボにて対応中","note":"","url":"","done":false}]},{"id":"m-d01-5","name":"書類回収","due":"2026-10-19","owner":"","tasks":[{"id":"t-d01-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d01-6","name":"支給申請","due":"2026-11-18","owner":"","tasks":[{"id":"t-d01-6-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d01-6-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d01-7","name":"受給","due":"2026-12-18","owner":"","tasks":[{"id":"t-d01-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d01-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d02","name":"正社員化","icon":"👥","categories":[{"id":"m-d02-1","name":"書類準備","due":"2026-07-18","owner":"","tasks":[{"id":"t-d02-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d02-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d02-2","name":"計画届","due":"2026-08-17","owner":"","tasks":[{"id":"t-d02-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d02-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d02-3","name":"就業規則改定","due":"2026-09-16","owner":"","tasks":[{"id":"t-d02-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d02-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d02-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d02-4","name":"計画実施","due":"2026-10-16","owner":"","tasks":[{"id":"t-d02-4-1","name":"計画どおりに実施してもらう","note":"","url":"","done":true}]},{"id":"m-d02-5","name":"書類回収","due":"2026-11-15","owner":"","side":"client","tasks":[{"id":"t-d02-5-1","name":"書類お待ちしております","note":"","url":"","done":false}]},{"id":"m-d02-6","name":"支給申請","due":"2026-12-15","owner":"","tasks":[{"id":"t-d02-6-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d02-6-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d02-7","name":"受給","due":"2027-01-14","owner":"","tasks":[{"id":"t-d02-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d02-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d03","name":"賃金規定","icon":"📑","categories":[{"id":"m-d03-1","name":"書類準備","due":"2025-12-27","owner":"","tasks":[{"id":"t-d03-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d03-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d03-2","name":"計画届","due":"2026-01-26","owner":"","tasks":[{"id":"t-d03-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d03-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d03-3","name":"就業規則改定","due":"2026-02-25","owner":"","tasks":[{"id":"t-d03-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d03-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d03-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d03-4","name":"計画実施","due":"2026-03-27","owner":"","tasks":[{"id":"t-d03-4-1","name":"計画どおりに実施してもらう","note":"","url":"","done":true}]},{"id":"m-d03-5","name":"書類回収","due":"2026-04-26","owner":"","tasks":[{"id":"t-d03-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":true}]},{"id":"m-d03-6","name":"支給申請","due":"2026-05-26","owner":"","side":"wait","tasks":[{"id":"t-d03-6-1","name":"審査結果待ち","note":"","url":"","done":false}]},{"id":"m-d03-7","name":"受給","due":"2026-10-19","owner":"","tasks":[{"id":"t-d03-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d03-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d04","name":"教育訓練","icon":"🎓","categories":[{"id":"m-d04-1","name":"書類準備","due":"2025-12-24","owner":"","tasks":[{"id":"t-d04-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d04-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d04-2","name":"計画届","due":"2026-01-23","owner":"","tasks":[{"id":"t-d04-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d04-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d04-3","name":"就業規則改定","due":"2026-02-22","owner":"","tasks":[{"id":"t-d04-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d04-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d04-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d04-4","name":"計画実施","due":"2026-03-24","owner":"","side":"us","tasks":[{"id":"t-d04-4-1","name":"研修を実施してください","note":"","url":"","done":false}]},{"id":"m-d04-5","name":"書類回収","due":"2026-10-19","owner":"","tasks":[{"id":"t-d04-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d04-6","name":"支給申請","due":"2026-11-18","owner":"","tasks":[{"id":"t-d04-6-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d04-6-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d04-7","name":"受給","due":"2026-12-18","owner":"","tasks":[{"id":"t-d04-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d04-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d05","name":"65歳超雇用推進","icon":"🌱","categories":[{"id":"m-d05-1","name":"書類準備","due":"2026-10-02","owner":"","tasks":[{"id":"t-d05-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d05-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d05-2","name":"計画届","due":"2026-11-01","owner":"","tasks":[{"id":"t-d05-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d05-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d05-3","name":"就業規則改定","due":"2026-12-01","owner":"","tasks":[{"id":"t-d05-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d05-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d05-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d05-4","name":"計画実施","due":"2026-12-31","owner":"","side":"us","tasks":[{"id":"t-d05-4-1","name":"ラボにて対応中","note":"","url":"","done":false}]},{"id":"m-d05-5","name":"書類回収","due":"2027-01-30","owner":"","tasks":[{"id":"t-d05-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d05-6","name":"支給申請","due":"2027-03-01","owner":"","tasks":[{"id":"t-d05-6-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d05-6-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d05-7","name":"受給","due":"2027-03-31","owner":"","tasks":[{"id":"t-d05-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d05-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d06","name":"定年制度","icon":"📋","categories":[{"id":"m-d06-1","name":"書類準備","due":"2026-07-05","owner":"","tasks":[{"id":"t-d06-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d06-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d06-2","name":"計画届","due":"2026-08-04","owner":"","tasks":[{"id":"t-d06-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d06-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d06-3","name":"就業規則改定","due":"2026-09-03","owner":"","tasks":[{"id":"t-d06-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d06-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d06-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d06-4","name":"計画実施","due":"2026-10-03","owner":"","side":"us","tasks":[{"id":"t-d06-4-1","name":"ラボにて対応中","note":"","url":"","done":false}]},{"id":"m-d06-5","name":"書類回収","due":"2026-11-02","owner":"","tasks":[{"id":"t-d06-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d06-6","name":"支給申請","due":"2026-12-02","owner":"","tasks":[{"id":"t-d06-6-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d06-6-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d06-7","name":"受給","due":"2027-01-01","owner":"","tasks":[{"id":"t-d06-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d06-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d07","name":"介護離職","icon":"🤝","categories":[{"id":"m-d07-1","name":"書類準備","due":"2026-01-13","owner":"","tasks":[{"id":"t-d07-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d07-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d07-2","name":"就業規則改定","due":"2026-02-12","owner":"","tasks":[{"id":"t-d07-2-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d07-2-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d07-2-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d07-3","name":"計画実施","due":"2026-03-14","owner":"","side":"us","tasks":[{"id":"t-d07-3-1","name":"計画実施お願いいたします。","note":"","url":"","done":false}]},{"id":"m-d07-4","name":"書類回収","due":"2026-10-19","owner":"","tasks":[{"id":"t-d07-4-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d07-5","name":"支給申請","due":"2026-11-18","owner":"","tasks":[{"id":"t-d07-5-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d07-5-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d07-6","name":"受給","due":"2026-12-18","owner":"","tasks":[{"id":"t-d07-6-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d07-6-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d08","name":"産休","icon":"🎁","categories":[{"id":"m-d08-1","name":"書類準備","due":"2026-01-02","owner":"","tasks":[{"id":"t-d08-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d08-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d08-2","name":"就業規則改定","due":"2026-02-01","owner":"","tasks":[{"id":"t-d08-2-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d08-2-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d08-2-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d08-3","name":"計画実施","due":"2026-03-03","owner":"","tasks":[{"id":"t-d08-3-1","name":"計画どおりに実施してもらう","note":"","url":"","done":true}]},{"id":"m-d08-4","name":"書類回収","due":"2026-04-02","owner":"","side":"client","tasks":[{"id":"t-d08-4-1","name":"書類お待ちしております","note":"","url":"","done":false}]},{"id":"m-d08-5","name":"支給申請","due":"2026-10-19","owner":"","tasks":[{"id":"t-d08-5-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d08-5-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d08-6","name":"受給","due":"2026-11-18","owner":"","tasks":[{"id":"t-d08-6-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d08-6-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d09","name":"育休","icon":"⭐","categories":[{"id":"m-d09-1","name":"書類準備","due":"2026-07-07","owner":"","tasks":[{"id":"t-d09-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d09-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d09-2","name":"就業規則改定","due":"2026-08-06","owner":"","tasks":[{"id":"t-d09-2-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d09-2-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d09-2-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d09-3","name":"計画実施","due":"2026-09-05","owner":"","tasks":[{"id":"t-d09-3-1","name":"計画どおりに実施してもらう","note":"","url":"","done":true}]},{"id":"m-d09-4","name":"書類回収","due":"2026-10-05","owner":"","tasks":[{"id":"t-d09-4-1","name":"申請に使う書類を回収する","note":"","url":"","done":true}]},{"id":"m-d09-5","name":"支給申請","due":"2026-11-04","owner":"","side":"wait","tasks":[{"id":"t-d09-5-1","name":"審査結果待ち","note":"","url":"","done":false}]},{"id":"m-d09-6","name":"受給","due":"2026-12-04","owner":"","tasks":[{"id":"t-d09-6-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d09-6-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d10","name":"柔軟な働き方","icon":"🏢","categories":[{"id":"m-d10-1","name":"書類準備","due":"2026-05-01","owner":"","tasks":[{"id":"t-d10-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d10-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d10-2","name":"就業規則改定","due":"2026-05-31","owner":"","tasks":[{"id":"t-d10-2-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d10-2-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d10-2-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d10-3","name":"計画実施","due":"2026-06-30","owner":"","side":"us","tasks":[{"id":"t-d10-3-1","name":"計画実施お願いいたします。","note":"","url":"","done":false}]},{"id":"m-d10-4","name":"書類回収","due":"2026-10-19","owner":"","tasks":[{"id":"t-d10-4-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d10-5","name":"支給申請","due":"2026-11-18","owner":"","tasks":[{"id":"t-d10-5-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d10-5-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d10-6","name":"受給","due":"2026-12-18","owner":"","tasks":[{"id":"t-d10-6-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d10-6-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d11","name":"雇用管理","icon":"🗂️","categories":[{"id":"m-d11-1","name":"書類準備","due":"2025-10-05","owner":"","tasks":[{"id":"t-d11-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d11-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d11-2","name":"計画届","due":"2025-11-04","owner":"","tasks":[{"id":"t-d11-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d11-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d11-3","name":"就業規則改定","due":"2025-12-04","owner":"","tasks":[{"id":"t-d11-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d11-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d11-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d11-4","name":"計画実施","due":"2026-01-03","owner":"","tasks":[{"id":"t-d11-4-1","name":"計画どおりに実施してもらう","note":"","url":"","done":true}]},{"id":"m-d11-5","name":"書類回収","due":"2026-02-02","owner":"","tasks":[{"id":"t-d11-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":true}]},{"id":"m-d11-6","name":"支給申請","due":"2026-03-04","owner":"","tasks":[{"id":"t-d11-6-1","name":"支給申請書をつくる","note":"","url":"","done":true},{"id":"t-d11-6-2","name":"労働局へ申請する","note":"","url":"","done":true}]},{"id":"m-d11-7","name":"受給","due":"2026-04-03","owner":"","side":"wait","tasks":[{"id":"t-d11-7-1","name":"審査結果待ち","note":"","url":"","done":false}]}]}]}],"templates":[]}</script>
+<script type="application/json" id="app-state">{"companies":[{"id":"co-a","name":"A社（サンプル）","projects":[{"id":"p-a1","name":"IT導入補助金","icon":"💻","categories":[{"id":"m-a1a","name":"書類あつめ","due":"2026-09-10","tasks":[{"id":"t-01","name":"見積書をもらう","done":true},{"id":"t-02","name":"決算書のコピーを用意","done":true}],"side":"wait","owner":""},{"id":"m-a1b","name":"申請の入力","due":"2026-09-25","tasks":[{"id":"t-04","name":"事業計画の下書き","done":false},{"id":"t-05","name":"入力内容の最終チェック","done":false}],"side":"client","owner":""},{"id":"m-a1c","name":"交付決定後の手続き","due":"2026-11-16","tasks":[{"id":"t-06","name":"発注・契約をすませる","done":false},{"id":"t-07","name":"支払いの記録を残す","done":false}]},{"id":"m-hyftqkx","name":"書類入力","due":"2026-10-02","side":"client","owner":"","tasks":[]}]},{"id":"p-a2","name":"業務改善助成金","icon":"🛠️","categories":[{"id":"m-a2a","name":"見積もり集め","due":"2026-08-20","tasks":[{"id":"t-08","name":"機器の見積もりを2社分もらう","done":true}]},{"id":"m-a2b","name":"賃金引上げ計画","due":"2026-10-05","tasks":[{"id":"t-09","name":"対象者リストをつくる","done":false},{"id":"t-10","name":"引上げ後の賃金表をつくる","done":false}]}]},{"id":"p-iv3wt6i","name":"aaaa","icon":"📋","categories":[{"id":"m-hzewi59","name":"書類あつめ","due":"2026-10-05","side":"client","owner":"","tasks":[{"id":"t-ahntej2","name":"必要書類の一覧をつくる","note":"","url":"","done":true},{"id":"t-chwdiox","name":"見積書をもらう","note":"","url":"","done":false},{"id":"t-etihg1c","name":"決算書のコピーを用意","note":"","url":"","done":false},{"id":"t-rg6cmcz","name":"gBizIDプライムを取得する","note":"","url":"https://gbiz-id.go.jp/","done":false}]},{"id":"m-voxq67x","name":"申請の入力","due":"2026-10-19","side":"us","owner":"","tasks":[{"id":"t-hho0yjx","name":"事業計画の下書き","note":"","url":"","done":false},{"id":"t-gfci2w1","name":"入力内容の最終チェック","note":"","url":"","done":false},{"id":"t-r6pu87p","name":"申請を送信する","note":"","url":"https://www.jgrants-portal.go.jp/","done":false}]},{"id":"m-ujpqqts","name":"交付決定後の手続き","due":"2026-12-04","side":"client","owner":"","tasks":[{"id":"t-3ujczpd","name":"発注・契約をすませる","note":"","url":"","done":false},{"id":"t-g9sdxil","name":"支払いの記録を残す","note":"","url":"","done":false}]},{"id":"m-144goly","name":"実績報告","due":"2027-03-04","side":"us","owner":"","tasks":[{"id":"t-8rm3dmk","name":"実績報告書をつくる","note":"","url":"","done":false},{"id":"t-k8pddot","name":"証拠書類をそろえる","note":"","url":"","done":false}]}]}]},{"id":"co-b","name":"B社（サンプル）","projects":[{"id":"p-b1","name":"持続化補助金","icon":"🏪","categories":[{"id":"m-b1a","name":"様式の作成","due":"2026-09-18","tasks":[{"id":"t-11","name":"様式2 経営計画をつくる","done":true},{"id":"t-12","name":"様式3 補助事業計画をつくる","done":false}]},{"id":"m-b1b","name":"商工会議所の確認","due":"2026-10-01","tasks":[{"id":"t-13","name":"支援計画書（様式4）を依頼する","done":false}]}]},{"id":"p-b2","name":"ホームページ更新","icon":"🌐","categories":[{"id":"m-b2a","name":"原稿づくり","due":"2026-09-05","tasks":[{"id":"t-14","name":"新メニューの文章を書く","done":true},{"id":"t-15","name":"写真を選ぶ","done":true}]}]}]},{"id":"co-c","name":"C社（サンプル）","projects":[{"id":"p-c1","name":"採用（求人）","icon":"👥","categories":[{"id":"m-c1a","name":"求人票づくり","due":"2026-12-10","tasks":[{"id":"t-16","name":"仕事内容を整理する","done":false}]}]}]},{"id":"co-d","name":"D社（サンプル）","projects":[{"id":"p-d01","name":"賞与退職金導入","icon":"💰","categories":[{"id":"m-d01-1","name":"書類準備","due":"2026-05-14","owner":"","tasks":[{"id":"t-d01-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d01-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d01-2","name":"計画届","due":"2026-06-13","owner":"","tasks":[{"id":"t-d01-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d01-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d01-3","name":"就業規則改定","due":"2026-07-13","owner":"","tasks":[{"id":"t-d01-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d01-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d01-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d01-4","name":"計画実施","due":"2026-08-12","owner":"","side":"us","tasks":[{"id":"t-d01-4-1","name":"ラボにて対応中","note":"","url":"","done":false}]},{"id":"m-d01-5","name":"書類回収","due":"2026-10-19","owner":"","tasks":[{"id":"t-d01-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d01-6","name":"支給申請","due":"2026-11-18","owner":"","tasks":[{"id":"t-d01-6-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d01-6-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d01-7","name":"受給","due":"2026-12-18","owner":"","tasks":[{"id":"t-d01-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d01-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d02","name":"正社員化","icon":"👥","categories":[{"id":"m-d02-1","name":"書類準備","due":"2026-07-18","owner":"","tasks":[{"id":"t-d02-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d02-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d02-2","name":"計画届","due":"2026-08-17","owner":"","tasks":[{"id":"t-d02-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d02-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d02-3","name":"就業規則改定","due":"2026-09-16","owner":"","tasks":[{"id":"t-d02-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d02-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d02-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d02-4","name":"計画実施","due":"2026-10-16","owner":"","tasks":[{"id":"t-d02-4-1","name":"計画どおりに実施してもらう","note":"","url":"","done":true}]},{"id":"m-d02-5","name":"書類回収","due":"2026-11-15","owner":"","side":"client","tasks":[{"id":"t-d02-5-1","name":"書類お待ちしております","note":"","url":"","done":false}]},{"id":"m-d02-6","name":"支給申請","due":"2026-12-15","owner":"","tasks":[{"id":"t-d02-6-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d02-6-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d02-7","name":"受給","due":"2027-01-14","owner":"","tasks":[{"id":"t-d02-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d02-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d03","name":"賃金規定","icon":"📑","categories":[{"id":"m-d03-1","name":"書類準備","due":"2025-12-27","owner":"","tasks":[{"id":"t-d03-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d03-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d03-2","name":"計画届","due":"2026-01-26","owner":"","tasks":[{"id":"t-d03-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d03-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d03-3","name":"就業規則改定","due":"2026-02-25","owner":"","tasks":[{"id":"t-d03-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d03-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d03-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d03-4","name":"計画実施","due":"2026-03-27","owner":"","tasks":[{"id":"t-d03-4-1","name":"計画どおりに実施してもらう","note":"","url":"","done":true}]},{"id":"m-d03-5","name":"書類回収","due":"2026-04-26","owner":"","tasks":[{"id":"t-d03-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":true}]},{"id":"m-d03-6","name":"支給申請","due":"2026-05-26","owner":"","side":"wait","tasks":[{"id":"t-d03-6-1","name":"審査結果待ち","note":"","url":"","done":false}]},{"id":"m-d03-7","name":"受給","due":"2026-10-19","owner":"","tasks":[{"id":"t-d03-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d03-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d04","name":"教育訓練","icon":"🎓","categories":[{"id":"m-d04-1","name":"書類準備","due":"2025-12-24","owner":"","tasks":[{"id":"t-d04-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d04-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d04-2","name":"計画届","due":"2026-01-23","owner":"","tasks":[{"id":"t-d04-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d04-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d04-3","name":"就業規則改定","due":"2026-02-22","owner":"","tasks":[{"id":"t-d04-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d04-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d04-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d04-4","name":"計画実施","due":"2026-03-24","owner":"","side":"us","tasks":[{"id":"t-d04-4-1","name":"研修を実施してください","note":"","url":"","done":false}]},{"id":"m-d04-5","name":"書類回収","due":"2026-10-19","owner":"","tasks":[{"id":"t-d04-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d04-6","name":"支給申請","due":"2026-11-18","owner":"","tasks":[{"id":"t-d04-6-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d04-6-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d04-7","name":"受給","due":"2026-12-18","owner":"","tasks":[{"id":"t-d04-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d04-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d05","name":"65歳超雇用推進","icon":"🌱","categories":[{"id":"m-d05-1","name":"書類準備","due":"2026-10-02","owner":"","tasks":[{"id":"t-d05-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d05-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d05-2","name":"計画届","due":"2026-11-01","owner":"","tasks":[{"id":"t-d05-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d05-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d05-3","name":"就業規則改定","due":"2026-12-01","owner":"","tasks":[{"id":"t-d05-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d05-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d05-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d05-4","name":"計画実施","due":"2026-12-31","owner":"","side":"us","tasks":[{"id":"t-d05-4-1","name":"ラボにて対応中","note":"","url":"","done":false}]},{"id":"m-d05-5","name":"書類回収","due":"2027-01-30","owner":"","tasks":[{"id":"t-d05-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d05-6","name":"支給申請","due":"2027-03-01","owner":"","tasks":[{"id":"t-d05-6-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d05-6-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d05-7","name":"受給","due":"2027-03-31","owner":"","tasks":[{"id":"t-d05-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d05-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d06","name":"定年制度","icon":"📋","categories":[{"id":"m-d06-1","name":"書類準備","due":"2026-07-05","owner":"","tasks":[{"id":"t-d06-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d06-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d06-2","name":"計画届","due":"2026-08-04","owner":"","tasks":[{"id":"t-d06-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d06-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d06-3","name":"就業規則改定","due":"2026-09-03","owner":"","tasks":[{"id":"t-d06-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d06-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d06-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d06-4","name":"計画実施","due":"2026-10-03","owner":"","side":"us","tasks":[{"id":"t-d06-4-1","name":"ラボにて対応中","note":"","url":"","done":false}]},{"id":"m-d06-5","name":"書類回収","due":"2026-11-02","owner":"","tasks":[{"id":"t-d06-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d06-6","name":"支給申請","due":"2026-12-02","owner":"","tasks":[{"id":"t-d06-6-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d06-6-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d06-7","name":"受給","due":"2027-01-01","owner":"","tasks":[{"id":"t-d06-7-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d06-7-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d07","name":"介護離職","icon":"🤝","categories":[{"id":"m-d07-1","name":"書類準備","due":"2026-01-13","owner":"","tasks":[{"id":"t-d07-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d07-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d07-2","name":"就業規則改定","due":"2026-02-12","owner":"","tasks":[{"id":"t-d07-2-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d07-2-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d07-2-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d07-3","name":"計画実施","due":"2026-03-14","owner":"","side":"us","tasks":[{"id":"t-d07-3-1","name":"計画実施お願いいたします。","note":"","url":"","done":false}]},{"id":"m-d07-4","name":"書類回収","due":"2026-10-19","owner":"","tasks":[{"id":"t-d07-4-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d07-5","name":"支給申請","due":"2026-11-18","owner":"","tasks":[{"id":"t-d07-5-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d07-5-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d07-6","name":"受給","due":"2026-12-18","owner":"","tasks":[{"id":"t-d07-6-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d07-6-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d08","name":"産休","icon":"🎁","categories":[{"id":"m-d08-1","name":"書類準備","due":"2026-01-02","owner":"","tasks":[{"id":"t-d08-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d08-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d08-2","name":"就業規則改定","due":"2026-02-01","owner":"","tasks":[{"id":"t-d08-2-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d08-2-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d08-2-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d08-3","name":"計画実施","due":"2026-03-03","owner":"","tasks":[{"id":"t-d08-3-1","name":"計画どおりに実施してもらう","note":"","url":"","done":true}]},{"id":"m-d08-4","name":"書類回収","due":"2026-04-02","owner":"","side":"client","tasks":[{"id":"t-d08-4-1","name":"書類お待ちしております","note":"","url":"","done":false}]},{"id":"m-d08-5","name":"支給申請","due":"2026-10-19","owner":"","tasks":[{"id":"t-d08-5-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d08-5-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d08-6","name":"受給","due":"2026-11-18","owner":"","tasks":[{"id":"t-d08-6-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d08-6-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d09","name":"育休","icon":"⭐","categories":[{"id":"m-d09-1","name":"書類準備","due":"2026-07-07","owner":"","tasks":[{"id":"t-d09-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d09-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d09-2","name":"就業規則改定","due":"2026-08-06","owner":"","tasks":[{"id":"t-d09-2-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d09-2-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d09-2-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d09-3","name":"計画実施","due":"2026-09-05","owner":"","tasks":[{"id":"t-d09-3-1","name":"計画どおりに実施してもらう","note":"","url":"","done":true}]},{"id":"m-d09-4","name":"書類回収","due":"2026-10-05","owner":"","tasks":[{"id":"t-d09-4-1","name":"申請に使う書類を回収する","note":"","url":"","done":true}]},{"id":"m-d09-5","name":"支給申請","due":"2026-11-04","owner":"","side":"wait","tasks":[{"id":"t-d09-5-1","name":"審査結果待ち","note":"","url":"","done":false}]},{"id":"m-d09-6","name":"受給","due":"2026-12-04","owner":"","tasks":[{"id":"t-d09-6-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d09-6-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d10","name":"柔軟な働き方","icon":"🏢","categories":[{"id":"m-d10-1","name":"書類準備","due":"2026-05-01","owner":"","tasks":[{"id":"t-d10-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d10-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d10-2","name":"就業規則改定","due":"2026-05-31","owner":"","tasks":[{"id":"t-d10-2-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d10-2-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d10-2-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d10-3","name":"計画実施","due":"2026-06-30","owner":"","side":"us","tasks":[{"id":"t-d10-3-1","name":"計画実施お願いいたします。","note":"","url":"","done":false}]},{"id":"m-d10-4","name":"書類回収","due":"2026-10-19","owner":"","tasks":[{"id":"t-d10-4-1","name":"申請に使う書類を回収する","note":"","url":"","done":false}]},{"id":"m-d10-5","name":"支給申請","due":"2026-11-18","owner":"","tasks":[{"id":"t-d10-5-1","name":"支給申請書をつくる","note":"","url":"","done":false},{"id":"t-d10-5-2","name":"労働局へ申請する","note":"","url":"","done":false}]},{"id":"m-d10-6","name":"受給","due":"2026-12-18","owner":"","tasks":[{"id":"t-d10-6-1","name":"支給決定の通知を受け取る","note":"","url":"","done":false},{"id":"t-d10-6-2","name":"入金を確認する","note":"","url":"","done":false}]}]},{"id":"p-d11","name":"雇用管理","icon":"🗂️","categories":[{"id":"m-d11-1","name":"書類準備","due":"2025-10-05","owner":"","tasks":[{"id":"t-d11-1-1","name":"必要書類の一覧をお客様に送る","note":"","url":"","done":true},{"id":"t-d11-1-2","name":"書類を受け取る","note":"","url":"","done":true}]},{"id":"m-d11-2","name":"計画届","due":"2025-11-04","owner":"","tasks":[{"id":"t-d11-2-1","name":"計画届をつくる","note":"","url":"","done":true},{"id":"t-d11-2-2","name":"労働局へ提出する","note":"","url":"","done":true}]},{"id":"m-d11-3","name":"就業規則改定","due":"2025-12-04","owner":"","tasks":[{"id":"t-d11-3-1","name":"改定案をつくる","note":"","url":"","done":true},{"id":"t-d11-3-2","name":"お客様の確認をもらう","note":"","url":"","done":true},{"id":"t-d11-3-3","name":"労働基準監督署へ届け出る","note":"","url":"","done":true}]},{"id":"m-d11-4","name":"計画実施","due":"2026-01-03","owner":"","tasks":[{"id":"t-d11-4-1","name":"計画どおりに実施してもらう","note":"","url":"","done":true}]},{"id":"m-d11-5","name":"書類回収","due":"2026-02-02","owner":"","tasks":[{"id":"t-d11-5-1","name":"申請に使う書類を回収する","note":"","url":"","done":true}]},{"id":"m-d11-6","name":"支給申請","due":"2026-03-04","owner":"","tasks":[{"id":"t-d11-6-1","name":"支給申請書をつくる","note":"","url":"","done":true},{"id":"t-d11-6-2","name":"労働局へ申請する","note":"","url":"","done":true}]},{"id":"m-d11-7","name":"受給","due":"2026-04-03","owner":"","side":"wait","tasks":[{"id":"t-d11-7-1","name":"審査結果待ち","note":"","url":"","done":false}]}]}]}],"templates":[]}</script>
 
 <script id="app-script">
 (function(){
@@ -2041,11 +2083,11 @@ function buildFoot(){
   help.appendChild(h('summary', { text: '使い方' }));
   var ul = h('ul');
   [
-    '会社名 → 予定 → 細かいタスク、の順に押していくと深くなります。',
+    '会社名 → 予定 → 細かいタスク、の順に押していくと深くなります。業務のカードは閉じた状態から始まります。「ひらく ▼」で中の予定が出て、「すべてひらく ▼」でその会社のぶんをまとめてひらけます。閉じていても、現在の状況・工程・次回対応・ボールは見えます。',
     '丸くて下に段（かげ）が付いているものがボタンです（押すと少し沈みます）。ふちの無い四角い色札（「申請の入力 中」「🤝 お客様の番」など）は表示だけです。予定の行は、右はしの「タスク ▼」を目印に行ごと押せます。',
     'タスクを全部チェックすると予定が緑になり、その業務の予定が全部緑になると、会社一覧のチップが「完了」の表示に変わって左の帯が緑になります。',
     '業務カードの上には「現在の状況」「工程」「次回対応」「ボール」が必ず出ます。工程の帯は、緑が完了した予定、色つきの太いところが現在の予定、灰色がこれからの予定です。ボールは、いま動く番が🏢こちらか🤝お客様か⏳返事待ちかを表します。',
-    '会社ページの上で「📊 工程ごとの進捗表」に切り替えると、進捗表シートと同じ形の表になります（業務が行、工程が列）。マスの中は状態とその工程の締切日。濃く塗られたマスがいまの工程、うすい緑が完了、点線わくがこれからです。マスを押すと表の下にタスクが出ます。スマホでも見られます（指で横になぞると続きが出ます）。パソコンでは会社をひらいた時点でこの表から始まり、スマホは予定ごとの並びから始まります。どちらで見るかはこの端末が覚えています。',
+    '会社ページの上で「📊 工程ごとの進捗表」に切り替えると、進捗表シートと同じ形になります（業務が行、工程が列）。パソコンは表、スマホは業務ごとのカードに工程を上から順にならべた形で、どちらも濃く塗られたところがいまの工程、うすい緑が完了、塗っていないところがこれからです。その工程の締切日も並びます。押すとタスクが出ます。パソコンでは会社をひらいた時点でこの形から始まり、スマホは予定ごとの並びから始まります。切り替えのボタンは、先に出るほうが左にあります。どちらで見るかはこの端末が覚えています。',
     '色は2つのことを答えます。カード全体の色は「つぎに動くのはだれか」（🏢こちらがやる＝みどり青／🤝お客様がやる＝ももいろ／⏳返事を待っている＝むらさき／まだ決めていない＝灰）。カード左はしの帯は「いつまでにやるか」（赤＝締切をすぎている、オレンジ＝あと7日以内、青＝まだ余裕がある、緑＝ぜんぶ終わった）。わざと色を変えてあるので、取りちがえません。',
     '会社一覧にならぶ四角も、同じ読み方です。同じ業務は、一覧と予定表で必ず同じ色になります。',
     '会社の一覧は、検索するか「すべての会社を見る」を押すまで出ません。会社が増えても、開いた瞬間に全部が縦にならばないようにしてあります。',
@@ -2143,7 +2185,7 @@ function renderCompany(){
   app.appendChild(h('p', { class: 'page-sub', text: stageMode
     ? (isWide()
         ? '横は工程、マスの数字はその工程の締切です。濃く塗られたマスがいまの工程。押すと下にタスクが出ます。'
-        : '横は工程です。指で横になぞると続きが見られます。濃く塗られたマスがいまの工程で、数字はその工程の締切です。')
+        : '業務ごとに、工程を上から順にならべています。濃く塗られた行がいまの工程です。押すとタスクが出ます。')
     : !isWide()
     ? '予定は締切が近い順です。右の「タスク ▼」でタスク、「たたむ ▲」で業務ごとに閉じられます。'
     : '横は月ごとの締切です。予定を押すと、その下にタスクが出ます。' }));
@@ -2182,8 +2224,12 @@ function renderCompany(){
     ]);
     empty.style.padding = '16px 18px';
     app.appendChild(empty);
-  } else if (stageMode) {
+  } else if (stageMode && isWide()) {
     app.appendChild(renderStageTable(co, projects));
+  } else if (stageMode) {
+    /* スマホの工程ごとは、横に長い表ではなく縦に読む形にする（本人の指示 2026-09-21） */
+    if (projects.length > 1) app.appendChild(foldBar(projects));
+    app.appendChild(renderMobileList(co, projects, true));
   } else if (!isWide()) {
     /* 業務が1件だけなら、たたむ意味がないのでバーを出さない */
     if (projects.length > 1) app.appendChild(foldBar(projects));
@@ -2242,7 +2288,7 @@ function renderCompany(){
   /* 予定の縦並び（スマホ）のときは、選んだ予定のすぐ下にタスクを出しているのでここには置かない。
      工程ごとの表は、広い画面でもスマホでも表の下に出す（スマホで出し忘れ、
      マスを押しても何も起きない状態になっていた。2026-09-21 実測で発見） */
-  if (isWide() || stageMode) app.appendChild(renderDetail(co));
+  if (isWide()) app.appendChild(renderDetail(co));
   /* 迷わないよう、すすめたい「ひな形から」を塗りの主ボタンにする */
   app.appendChild(h('div', { class: 'btn-row' }, [
     h('button', { class: 'btn-add primary', text: '＋ ひな形から業務を追加', onclick: function(){ addProject(co, true); } }),
@@ -2390,22 +2436,25 @@ function renderStageTable(co, projects){
  * 業務データ（STATE）には入れない。入れると「だれが何をたたんだか」まで
  * 共有相手に配られてしまう。凡例・表の見かたと同じくこの端末に置く。
  * ============================================================ */
-var FOLD_KEY = 'shimekiri-fold';
-var FOLD_KEEP = 400;
-function foldedIds(){
+/* ⚠ 覚えるのは「ひらいたもの」。**記録が無ければ閉じている**（本人の指示 2026-09-21）。
+   以前は「たたんだもの」を覚えていたので、未記録＝ひらいている だった。
+   意味が逆になるため、キーも shimekiri-fold から変えてある */
+var OPEN_KEY = 'shimekiri-open';
+var OPEN_KEEP = 400;
+function openIds(){
   try {
-    var a = JSON.parse(localStorage.getItem(FOLD_KEY) || '[]');
+    var a = JSON.parse(localStorage.getItem(OPEN_KEY) || '[]');
     return Array.isArray(a) ? a.filter(function(x){ return typeof x === 'string'; }) : [];
   } catch (e) { return []; }
 }
-function saveFolded(ids){
-  try { localStorage.setItem(FOLD_KEY, JSON.stringify(ids.slice(0, FOLD_KEEP))); } catch (e) {}
+function saveOpen(ids){
+  try { localStorage.setItem(OPEN_KEY, JSON.stringify(ids.slice(0, OPEN_KEEP))); } catch (e) {}
 }
-function isFolded(p){ return foldedIds().indexOf(p.id) >= 0; }
+function isFolded(p){ return openIds().indexOf(p.id) < 0; }
 function setFolded(p, v){
-  var ids = foldedIds().filter(function(x){ return x !== p.id; });
-  if (v) ids.unshift(p.id);
-  saveFolded(ids);
+  var ids = openIds().filter(function(x){ return x !== p.id; });
+  if (!v) ids.unshift(p.id);   /* ひらいたときだけ覚える */
+  saveOpen(ids);
 }
 /* たたんだ業務の中でタスクがひらいたままだと、そのタスクが行方不明になる */
 function dropSelIn(p){
@@ -2420,11 +2469,13 @@ function toggleFold(p){
   render();
 }
 function foldAll(projects, v){
-  var ids = foldedIds().filter(function(x){
+  /* この会社のぶんを一度そとし、ひらくときだけ入れ直す */
+  var ids = openIds().filter(function(x){
     return !projects.some(function(p){ return p.id === x; });
   });
-  if (v) projects.forEach(function(p){ ids.push(p.id); dropSelIn(p); });
-  saveFolded(ids);
+  if (v) projects.forEach(dropSelIn);
+  else projects.forEach(function(p){ ids.push(p.id); });
+  saveOpen(ids);
   render();
 }
 /* 何件ひらいているかと、まとめて開け閉めするボタン */
@@ -2446,14 +2497,14 @@ function foldBar(projects){
    ⚠ キーを shimekiri-layout2 に変えてあるのは、前の版で「月ごと」を選んだ端末に
       古い設定が残っていると、新しい既定が効かないため */
 var LAYOUT_KEY = 'shimekiri-layout2';
+/* まだ選んでいないときに出る方。広い画面は工程ごとの進捗表、スマホは予定の縦並び */
+function defaultLayout(){ return isWide() ? 'stage' : 'month'; }
 function layoutMode(){
   try {
     var v = localStorage.getItem(LAYOUT_KEY);
     if (v === 'month' || v === 'stage') return v;
   } catch (e) {}
-  /* まだ選んでいないとき：広い画面は工程ごとの進捗表、スマホは予定の縦並び。
-     スマホで工程表を先に出すと、横に動かさないとタスクに手が届かないため */
-  return isWide() ? 'stage' : 'month';
+  return defaultLayout();
 }
 function setLayout(v){
   try { localStorage.setItem(LAYOUT_KEY, v); } catch (e) {}
@@ -2463,19 +2514,25 @@ function layoutSwitch(){
   var cur = layoutMode();
   var w = isWide();
   /* スマホでは長い名前が2行に折れるので短くする。読み上げには長い名前を残す */
+  var defs = {
+    month: [w ? '📅 月ごとの予定表' : '📅 予定ごと', '月ごとの予定表で見る'],
+    stage: [w ? '📊 工程ごとの進捗表' : '📊 工程ごと', '工程ごとの進捗表で見る']
+  };
+  /* 既定で出る方を左に置く（何も押していない画面と並びが合う。本人の指示 2026-09-21） */
+  var order = defaultLayout() === 'stage' ? ['stage', 'month'] : ['month', 'stage'];
   return h('div', { class: 'layout-sw', role: 'group', 'aria-label': '表の見かた' },
-    [['month', w ? '📅 月ごとの予定表' : '📅 予定ごと', '月ごとの予定表で見る'],
-     ['stage', w ? '📊 工程ごとの進捗表' : '📊 工程ごと', '工程ごとの進捗表で見る']].map(function(x){
-      return h('button', { type: 'button', class: cur === x[0] ? 'sel' : '',
-        'aria-pressed': cur === x[0] ? 'true' : 'false', text: x[1],
-        'aria-label': x[2], title: x[2],
-        onclick: function(){ if (layoutMode() !== x[0]) setLayout(x[0]); } });
+    order.map(function(key){
+      var x = defs[key];
+      return h('button', { type: 'button', class: cur === key ? 'sel' : '',
+        'aria-pressed': cur === key ? 'true' : 'false', text: x[0],
+        'aria-label': x[1], title: x[1],
+        onclick: function(){ if (layoutMode() !== key) setLayout(key); } });
     }));
 }
 
 /* 業務の見出し（月グリッドの左列と、スマホのカード頭で共用する）。
    foldBtn はスマホのときだけ渡す（月グリッドの行にはたたみが無い） */
-function projHeader(co, p, foldBtn){
+function projHeader(co, p, foldBtn, byStage){
   var pd = projDone(p);
   var doneCats = p.categories.filter(catDone).length;
 
@@ -2522,7 +2579,9 @@ function projHeader(co, p, foldBtn){
 
   var txt = h('div', { class: 'p-txt' }, [
     h('div', { class: 'p-title', text: (p.archived ? '📦 ' : (pd ? '✓ ' : '')) + p.name }),
-    h('div', { class: 'p-meta num', text: '予定 ' + doneCats + '/' + p.categories.length + ' 完了' }),
+    /* 工程ごとで見ているときは、同じものを「工程」と呼ぶ（画面の中で呼び名を割らない） */
+    h('div', { class: 'p-meta num', text: (byStage ? '工程 ' : '予定 ')
+      + doneCats + '/' + p.categories.length + ' 完了' }),
     status,
     acts
   ]);
@@ -2566,8 +2625,55 @@ function scrollDetailIntoView(){
   catch (e) { det.scrollIntoView(false); }
 }
 
-/* スマホ用：業務ごとのカードに、予定を締切順の縦並びで入れる */
-function renderMobileList(co, projects){
+/* 工程ごとの1行（スマホの縦型）。表のマスを、行に伸ばしたもの。
+   横に長い表をスマホで見るより、縦に読むほうが速い（本人の指示 2026-09-21）。
+   見分けの決まりは表のマスと同じ：
+     いまの工程 … 行ごと濃いベタ塗り（色はボール）  完了 … うすい緑  これから … 塗らない */
+function stageRow(co, p, c){
+  var stg = stageOf(p, c);
+  var sd = stg === 'now' ? sideOf(c) : null;
+  var sel = VIEW.selCat === c.id;
+  var cnt = catCounts(c);
+  var state = stg === 'done' ? '完了'
+            : stg === 'now' ? (sd ? sd.label : '進行中')
+            : 'これから';
+  return h('button', {
+    class: 'mchip mrow sgm-step s-' + stg
+      + (stg === 'now' ? ' b-' + (sd ? sd.value : 'none') : '') + (sel ? ' sel' : ''),
+    'aria-expanded': sel ? 'true' : 'false',
+    'aria-label': c.name + '：' + state + '（締切 ' + fmtMD(c.due) + '）'
+      + (sel ? 'のタスクを閉じる' : 'のタスクを開く'),
+    onclick: function(){
+      if (sel) { closeDetail(); return; }
+      VIEW.selCat = c.id;
+      storeView();
+      render();
+      scrollDetailIntoView();
+    }
+  }, [
+    h('span', { class: 'sgm-mark', 'aria-hidden': 'true',
+      text: stg === 'done' ? '✓' : stg === 'now' ? '●' : '○' }),
+    h('span', { class: 'sgm-body' }, [
+      h('span', { class: 'sgm-name', text: c.name }),
+      /* 済んだ行で「完了 ・ 2/2 完了」と重ならないよう、完了のときは件数だけにする */
+      h('span', { class: 'sgm-sub num', text: stg === 'done'
+        ? cnt.done + '/' + cnt.total + ' 完了'
+        : state + ' ・ ' + cnt.done + '/' + cnt.total + ' 完了' })
+    ]),
+    h('span', { class: 'sgm-date num' }, [
+      h('span', { class: 'sgm-date-k', text: '締切' }),
+      h('b', { text: fmtMD(c.due) })
+    ]),
+    h('span', { class: 'mrow-go', 'aria-hidden': 'true' }, [
+      h('span', { class: 'mrow-go-t', text: sel ? '閉じる' : 'タスク' }),
+      h('span', { class: 'mrow-chev', text: sel ? '▲' : '▼' })
+    ])
+  ]);
+}
+
+/* スマホ用：業務ごとのカードに、予定（または工程）を縦並びで入れる。
+   byStage が真なら工程の順、偽なら締切の近い順 */
+function renderMobileList(co, projects, byStage){
   var list = h('div', { class: 'mlist' });
   projects.forEach(function(p){
     var fold = isFolded(p);
@@ -2582,7 +2688,7 @@ function renderMobileList(co, projects){
          語を足すと業務名の幅を奪って題名が2行に折れた（2026-09-21 実測） */
       fold ? h('span', { class: 'p-fold-t', text: 'ひらく' }) : null,
       h('span', { class: 'mrow-chev', text: fold ? '▼' : '▲' })
-    ]));
+    ]), byStage);
     head.classList.add('mproj');
     /* たたんでいるときは予定のDOMを作らない（11業務ぶんの行が丸ごと減る） */
     if (fold) {
@@ -2593,11 +2699,23 @@ function renderMobileList(co, projects){
     }
     var cats = h('div', { class: 'mcats' });
 
-    var sorted = p.categories.slice().sort(function(a, b){
+    /* 工程ごとのときは工程の順（＝予定の順）、予定ごとのときは締切の近い順 */
+    var sorted = byStage ? catsInOrder(p) : p.categories.slice().sort(function(a, b){
       return String(a.due || '9999').localeCompare(String(b.due || '9999'));
     });
     if (!sorted.length) {
       cats.appendChild(h('div', { class: 'mcats-empty', text: 'まだ予定がありません。「➕ 予定」から追加できます。' }));
+    }
+    if (byStage) {
+      sorted.forEach(function(c){
+        cats.appendChild(stageRow(co, p, c));
+        if (VIEW.selCat === c.id) cats.appendChild(renderDetail(co));
+      });
+      list.appendChild(h('div', {
+        class: 'mproj-card' + (fold ? ' is-fold' : '')
+          + ' s-' + projStateKey(p) + ' b-' + projBallKey(p)
+      }, [head, cats]));
+      return;
     }
     sorted.forEach(function(c){
       var cnt = catCounts(c);
