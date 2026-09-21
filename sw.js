@@ -4,7 +4,7 @@
  * キャッシュを先に見ると、こちらが進捗を更新しても相手の画面が古いまま止まる。
  * 圏外や機内モードのときだけ、最後に見た内容を出す。
  */
-var CACHE = 'shimekiri-1bdcb1d8b4ed';
+var CACHE = 'shimekiri-65dff1b1a7a9';
 var ASSETS = [
   './', 'index.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png',

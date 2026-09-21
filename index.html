@@ -795,7 +795,9 @@
   .pchip:active,.mchip:active,.sc:active{transform:translateY(1px);filter:brightness(.96);}
   .mchip.mrow:active{transform:none;background:var(--accent-soft);}
   /* 押せない色札。ふちを消し、角を小さくして「ボタンではない」と見せる */
-  .st-badge[class],.ball[class],.sum-chip[class],.co-flag[class]{
+  /* ⚠ tpl-badge（「標準」）が丸いふち付きのままで、押せると思って押された
+     （本人の指摘 2026-09-21）。押せない札は必ずここに足すこと */
+  .st-badge[class],.ball[class],.sum-chip[class],.co-flag[class],.tpl-badge[class]{
     border-color:transparent;border-radius:6px;box-shadow:none;
   }
   /* 工程の帯も押せないので、白い枠（ボタンに見えた）をやめて灰色の帯にする */
@@ -1025,11 +1027,14 @@
   .foot summary{cursor:pointer;font-weight:700;padding:11px 0;}
   .foot ul{margin:8px 0 0;padding-left:20px;}
   .foot li{margin-bottom:6px;line-height:1.8;}
-  .tpl-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;color:var(--ink);}
+  .tpl-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px;color:var(--ink);flex-wrap:wrap;}
   .tpl-row:first-of-type{border-top:none;}
-  .tpl-row .t-sub{color:var(--muted);font-size:12.5px;}
-  .tpl-row .grow{flex:1 1 auto;min-width:0;}
-  .tpl-badge{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 10px;}
+  .tpl-row .t-sub{display:block;color:var(--muted);font-size:12.5px;}
+  .tpl-row .grow{flex:1 1 140px;min-width:0;}
+  .tpl-badge{font-size:12px;color:var(--muted);background:var(--surface-2);padding:2px 10px;white-space:nowrap;}
+  /* ひな形の操作。押せるものの決まり（丸いボタン＋段の影）にそろえる */
+  .tpl-acts{flex:0 0 auto;display:flex;gap:6px;flex-wrap:wrap;}
+  .tpl-note{font-size:13px;color:var(--muted);line-height:1.8;padding:6px 0 10px;}
 
   @media (max-width:640px){
     .company-row{flex-direction:column;}
@@ -2069,6 +2074,68 @@ function sumBar(s){
   return h('div', { class: 'sum-bar', role: 'group', 'aria-label': '業務の件数' }, kids);
 }
 
+/* 画面の下の開閉（使い方・ひな形の管理）を覚える。
+   操作のたびに閉じると、続けて触れなくて「管理できない」と感じる */
+var FOOT_KEY = 'shimekiri-foot-open';
+function footOpenSet(){
+  try {
+    var a = JSON.parse(localStorage.getItem(FOOT_KEY) || '[]');
+    return Array.isArray(a) ? a : [];
+  } catch (e) { return []; }
+}
+function footOpen(key){ return footOpenSet().indexOf(key) >= 0; }
+function saveFootOpen(key, v){
+  var a = footOpenSet().filter(function(x){ return x !== key; });
+  if (v) a.push(key);
+  try { localStorage.setItem(FOOT_KEY, JSON.stringify(a)); } catch (e) {}
+}
+
+/* 標準のひな形は消せない。コピーを作れば、名前を変えたり消したりできる */
+function copyTemplate(t){
+  openDlg({
+    title: 'ひな形をコピー',
+    lead: '標準のひな形は消したり直したりできません。コピーを作ると、自分のひな形として名前を変えたり消したりできます。',
+    okLabel: 'コピーをつくる',
+    fields: [{ key: 'name', label: '新しいひな形の名前', type: 'text', required: true,
+               value: t.name + '（コピー）' }],
+    onSubmit: function(v){
+      var name = v.name.trim();
+      mutate(function(){
+        STATE.templates.push({
+          id: uid('tpl'), name: name, icon: t.icon || DEFAULT_ICON,
+          /* 中身は丸ごと写す。元の標準ひな形は触らない */
+          cats: JSON.parse(JSON.stringify(t.cats))
+        });
+      });
+      flash('ひな形「' + name + '」をつくりました');
+    }
+  });
+}
+/* 自分のひな形の名前を変える・消す */
+function editTemplate(t){
+  openDlg({
+    title: 'ひな形の名前',
+    lead: t.cats.length + '個の予定が入っているひな形です。中身を変えたいときは、'
+      + 'この形で業務をひとつ作って直してから、あらためて「🧩 ひな形として保存」してください。',
+    fields: [
+      { key: 'name', label: 'ひな形の名前', type: 'text', required: true, value: t.name },
+      { key: 'icon', label: 'アイコン', type: 'emoji', value: t.icon || DEFAULT_ICON }
+    ],
+    onSubmit: function(v){
+      mutate(function(){ t.name = v.name.trim(); t.icon = v.icon || t.icon; });
+    },
+    extras: [{
+      label: 'このひな形を削除', danger: true,
+      run: function(){
+        mutate(function(){
+          STATE.templates = STATE.templates.filter(function(x){ return x.id !== t.id; });
+        });
+        flash('ひな形「' + t.name + '」を削除しました');
+      }
+    }]
+  });
+}
+
 function nearestCatId(p){
   var undone = p.categories.filter(function(c){ return !catDone(c); });
   var pool = undone.length ? undone : p.categories;
@@ -2080,6 +2147,8 @@ function buildFoot(){
   var foot = h('div', { class: 'foot' });
 
   var help = h('details');
+  help.open = footOpen('help');
+  help.addEventListener('toggle', function(){ saveFootOpen('help', help.open); });
   help.appendChild(h('summary', { text: '使い方' }));
   var ul = h('ul');
   [
@@ -2087,7 +2156,7 @@ function buildFoot(){
     '丸くて下に段（かげ）が付いているものがボタンです（押すと少し沈みます）。ふちの無い四角い色札（「申請の入力 中」「🤝 お客様の番」など）は表示だけです。予定の行は、右はしの「タスク ▼」を目印に行ごと押せます。',
     'タスクを全部チェックすると予定が緑になり、その業務の予定が全部緑になると、会社一覧のチップが「完了」の表示に変わって左の帯が緑になります。',
     '業務カードの上には「現在の状況」「工程」「次回対応」「ボール」が必ず出ます。工程の帯は、緑が完了した予定、色つきの太いところが現在の予定、灰色がこれからの予定です。ボールは、いま動く番が🏢こちらか🤝お客様か⏳返事待ちかを表します。',
-    '会社ページの上で「📊 工程ごとの進捗表」に切り替えると、進捗表シートと同じ形になります（業務が行、工程が列）。パソコンは表、スマホは業務ごとのカードに工程を上から順にならべた形で、どちらも濃く塗られたところがいまの工程、うすい緑が完了、塗っていないところがこれからです。その工程の締切日も並びます。押すとタスクが出ます。パソコンでは会社をひらいた時点でこの形から始まり、スマホは予定ごとの並びから始まります。切り替えのボタンは、先に出るほうが左にあります。どちらで見るかはこの端末が覚えています。',
+    '会社をひらくと、まず「📊 工程ごとの進捗表」の形で出ます（スマホのボタンは「📊 工程ごと」。進捗表シートと同じで、業務が行、工程が列）。パソコンは表、スマホは業務ごとのカードに工程を上から順にならべた形です。どちらも濃く塗られたところがいまの工程、うすい緑が完了、塗っていないところがこれからで、その工程の締切日も並びます。押すとタスクが出ます。「📅 予定ごと」に切り替えると、締切の近い順（パソコンは月ごとの表）になります。切り替えのボタンは、先に出る「工程ごと」が左です。どちらで見るかはこの端末が覚えています。',
     '色は2つのことを答えます。カード全体の色は「つぎに動くのはだれか」（🏢こちらがやる＝みどり青／🤝お客様がやる＝ももいろ／⏳返事を待っている＝むらさき／まだ決めていない＝灰）。カード左はしの帯は「いつまでにやるか」（赤＝締切をすぎている、オレンジ＝あと7日以内、青＝まだ余裕がある、緑＝ぜんぶ終わった）。わざと色を変えてあるので、取りちがえません。',
     '会社一覧にならぶ四角も、同じ読み方です。同じ業務は、一覧と予定表で必ず同じ色になります。',
     '会社の一覧は、検索するか「すべての会社を見る」を押すまで出ません。会社が増えても、開いた瞬間に全部が縦にならばないようにしてあります。',
@@ -2096,7 +2165,7 @@ function buildFoot(){
     '「🕘 さいきん見た会社」には、直前にひらいた会社が新しい順にならびます。入りきらないときは指で横になぞると続きが出ます。いま使っている端末だけに残る覚え書きなので、ほかの人には見えません（端末を変えると空から始まります）。「履歴を消す」でいつでも消せます。',
     'ボールと担当者は、予定の「✏️ 編集」から変えられます。担当者は番のうえで実際に手を動かす人の名前です。',
     'タスクの「📝 メモ」から、メモと様式・申請ページのURLを貼れます。貼ると「🔗 開く」が出ます。',
-    '同じ工程をくり返す業務は「ひな形」に保存しておくと、次の会社でひと押しで作れます。メモとリンクも一緒に入ります。',
+    '同じ工程をくり返す業務は「ひな形」に保存しておくと、次の会社でひと押しで作れます。メモとリンクも一緒に入ります。作るのは業務の「✏️ 編集」→「🧩 この業務をひな形として保存」。あとから名前を変えたり消したりするのは、会社一覧のいちばん下「ひな形の管理」からです。標準の2つは消せませんが、「📄 コピー」すると自分用になります。',
     '終わった業務は「しまう」で一覧から隠せます。消さずに残るので、あとから戻せます。',
     '変更は少し待つと自動で保存されます（右上に「保存しました」と出ます）。'
   ].forEach(function(s){ ul.appendChild(h('li', { text: s })); });
@@ -2104,28 +2173,47 @@ function buildFoot(){
   foot.appendChild(help);
 
   var tpl = h('details');
+  tpl.open = footOpen('tpl');
+  tpl.addEventListener('toggle', function(){ saveFootOpen('tpl', tpl.open); });
   tpl.appendChild(h('summary', { text: 'ひな形の管理（' + allTemplates().length + '件）' }));
+  /* 何をするところかと、作り方をここに書く。
+     以前は一覧を見るだけで操作が無く「管理ができない」と言われた（本人の指摘 2026-09-21） */
+  tpl.appendChild(h('p', { class: 'tpl-note', text:
+    'ひな形は、いつもの予定とタスクをまとめて入れるための型です。'
+    + '新しく作るときは、業務の「✏️ 編集」→「🧩 この業務をひな形として保存」。'
+    + '標準の2つは消せませんが、「📄 コピー」すると名前を変えたり消したりできる自分用になります。' }));
   allTemplates().forEach(function(t){
-    var row = h('div', { class: 'tpl-row' }, [
-      h('span', { text: t.icon || DEFAULT_ICON }),
-      h('span', { class: 'grow' }, [
-        document.createTextNode(t.name),
-        h('span', { class: 't-sub', text: t.cats.length + '個の予定 ・ ' + t.cats.reduce(function(a, c){ return a + (c.tasks || []).length; }, 0) + '個のタスク' })
-      ]),
-      t.builtin ? h('span', { class: 'tpl-badge', text: '標準' }) : null
-    ]);
-    if (!t.builtin) {
-      var del = h('button', { class: 't-del', text: '削除' });
+    var acts = h('div', { class: 'tpl-acts' });
+    if (t.builtin) {
+      acts.appendChild(h('button', { class: 'icon-btn', type: 'button', text: '📄 コピー',
+        'aria-label': t.name + 'をコピーして自分用のひな形をつくる',
+        title: 'コピーすると、名前を変えたり消したりできるようになります',
+        onclick: function(){ copyTemplate(t); } }));
+    } else {
+      acts.appendChild(h('button', { class: 'icon-btn', type: 'button', text: '✏️ 名前',
+        'aria-label': t.name + 'の名前を変える', onclick: function(){ editTemplate(t); } }));
+      var del = h('button', { class: 't-del', type: 'button', text: '削除',
+        'aria-label': t.name + 'を削除する' });
       del.addEventListener('click', function(){
         armDelete(del, 'もう一度押すと削除', function(){
           mutate(function(){
             STATE.templates = STATE.templates.filter(function(x){ return x.id !== t.id; });
           });
+          flash('ひな形「' + t.name + '」を削除しました');
         });
       });
-      row.appendChild(del);
+      acts.appendChild(del);
     }
-    tpl.appendChild(row);
+    tpl.appendChild(h('div', { class: 'tpl-row' }, [
+      h('span', { text: t.icon || DEFAULT_ICON }),
+      h('span', { class: 'grow' }, [
+        document.createTextNode(t.name),
+        h('span', { class: 't-sub', text: t.cats.length + '個の予定 ・ '
+          + t.cats.reduce(function(a, c){ return a + (c.tasks || []).length; }, 0) + '個のタスク' })
+      ]),
+      t.builtin ? h('span', { class: 'tpl-badge', text: '標準' }) : null,
+      acts
+    ]));
   });
   foot.appendChild(tpl);
   return foot;
@@ -2187,7 +2275,7 @@ function renderCompany(){
         ? '横は工程、マスの数字はその工程の締切です。濃く塗られたマスがいまの工程。押すと下にタスクが出ます。'
         : '業務ごとに、工程を上から順にならべています。濃く塗られた行がいまの工程です。押すとタスクが出ます。')
     : !isWide()
-    ? '予定は締切が近い順です。右の「タスク ▼」でタスク、「たたむ ▲」で業務ごとに閉じられます。'
+    ? '予定は締切が近い順です。業務の「ひらく ▼」で中の予定、右の「タスク ▼」でタスクが出ます。'
     : '横は月ごとの締切です。予定を押すと、その下にタスクが出ます。' }));
   app.appendChild(layoutSwitch());
   /* 本文の幅を広げるのは、広い画面で工程表を出しているときだけ */
@@ -2497,8 +2585,9 @@ function foldBar(projects){
    ⚠ キーを shimekiri-layout2 に変えてあるのは、前の版で「月ごと」を選んだ端末に
       古い設定が残っていると、新しい既定が効かないため */
 var LAYOUT_KEY = 'shimekiri-layout2';
-/* まだ選んでいないときに出る方。広い画面は工程ごとの進捗表、スマホは予定の縦並び */
-function defaultLayout(){ return isWide() ? 'stage' : 'month'; }
+/* まだ選んでいないときに出る方。スマホも「工程ごと」にそろえた（本人の指摘 2026-09-21）。
+   スマホの工程ごとは横スクロールをやめて縦型にしたので、先に出しても読みづらくない */
+function defaultLayout(){ return 'stage'; }
 function layoutMode(){
   try {
     var v = localStorage.getItem(LAYOUT_KEY);
@@ -2518,8 +2607,9 @@ function layoutSwitch(){
     month: [w ? '📅 月ごとの予定表' : '📅 予定ごと', '月ごとの予定表で見る'],
     stage: [w ? '📊 工程ごとの進捗表' : '📊 工程ごと', '工程ごとの進捗表で見る']
   };
-  /* 既定で出る方を左に置く（何も押していない画面と並びが合う。本人の指示 2026-09-21） */
-  var order = defaultLayout() === 'stage' ? ['stage', 'month'] : ['month', 'stage'];
+  /* 既定で出る方（＝工程ごと）を必ず左に置く。画面の広さで入れ替えない
+     （スマホだけ並びが逆だと、同じ人がパソコンと見くらべたときに迷う。本人の指摘 2026-09-21） */
+  var order = ['stage', 'month'];
   return h('div', { class: 'layout-sw', role: 'group', 'aria-label': '表の見かた' },
     order.map(function(key){
       var x = defs[key];
@@ -3058,7 +3148,8 @@ function addProject(co, preferTemplate){
       { key: 'icon', label: 'アイコン', type: 'emoji', value: DEFAULT_ICON },
       { key: 'tpl', label: 'ひな形', type: 'choice', options: opts,
         value: preferTemplate && tpls.length ? tpls[0].id : '',
-        hint: 'ひな形を選ぶと、いつもの予定とタスクがまとめて入ります。' }
+        hint: 'ひな形を選ぶと、いつもの予定とタスクがまとめて入ります。'
+          + 'ひな形を足したり消したりするのは、会社一覧のいちばん下「ひな形の管理」からです。' }
     ],
     onSubmit: function(v){
       var proj = { id: uid('p'), name: v.name.trim(), icon: v.icon || DEFAULT_ICON, categories: [] };
